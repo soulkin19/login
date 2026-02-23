@@ -110,7 +110,7 @@
             input.accept = 'image/*';
             input.onchange = e => {
                 const file = e.target.files[0];
-                if (file.size > 50000) return alert("画像が大きすぎます(50KB以下にしてください)");
+                if (file.size > 500000) return alert("画像が大きすぎます(50KB以下にしてください)");
                 const reader = new FileReader();
                 reader.onload = async (event) => {
                     const base64Img = event.target.result;
