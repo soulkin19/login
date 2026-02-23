@@ -5,35 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ユーザーポータル</title>
     <style>
-        /* --- デザイン（変更なし） --- */
+        /* --- 既存デザイン維持 --- */
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #333; }
         .hidden { display: none !important; }
-
         #auth-container { max-width: 400px; margin: 80px auto; background: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
         .tab-menu { display: flex; background: #eee; }
         .tab-menu div { flex: 1; text-align: center; padding: 15px 0; cursor: pointer; font-weight: bold; color: #888; transition: 0.3s; }
         .tab-menu div.active { background: #fff; color: #2196F3; border-bottom: 3px solid #2196F3; }
         .form-area { padding: 30px; }
-        .form-area h2 { margin-top: 0; text-align: center; color: #444; }
         .input-group { margin-bottom: 20px; }
         .input-group label { display: block; font-size: 12px; margin-bottom: 5px; color: #666; }
         .input-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-size: 16px; }
         .action-btn { width: 100%; padding: 12px; background: #2196F3; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .action-btn:hover { background: #1976D2; }
-        .error-msg { color: #e74c3c; font-size: 13px; text-align: center; margin-top: 10px; min-height: 15px; }
-
-        header { background: #2c3e50; color: #fff; padding: 15px 20px; display: flex; align-items: center; }
-        .hamburger-btn { font-size: 24px; cursor: pointer; margin-right: 15px; user-select: none; }
-        
+        header { background: #2c3e50; color: #fff; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; }
+        .hamburger-btn { font-size: 24px; cursor: pointer; user-select: none; }
         #sidebar { position: fixed; top: 0; left: -300px; width: 250px; height: 100%; background: #fff; box-shadow: 2px 0 10px rgba(0,0,0,0.2); transition: 0.3s ease-in-out; z-index: 1000; padding: 20px; box-sizing: border-box; }
         #sidebar.open { left: 0; }
-        #sidebar h3 { margin-top: 0; color: #2196F3; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .profile-info { margin-bottom: 15px; font-size: 14px; }
-        .profile-info span { font-weight: bold; color: #333; float: right; }
-        .close-btn { text-align: right; cursor: pointer; color: #999; font-size: 20px; margin-bottom: 10px; }
-        #btn-logout { width: 100%; padding: 10px; background: #95a5a6; color: #fff; border: none; border-radius: 5px; cursor: pointer; margin-top: 20px; }
-
-        .main-content { padding: 40px; text-align: center; }
+        .profile-info { margin-bottom: 15px; font-size: 14px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .profile-info span { font-weight: bold; float: right; }
+        .user-icon { width: 80px; height: 80px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 15px; overflow: hidden; border: 2px solid #2196F3; }
+        .user-icon img { width: 100%; height: 100%; object-fit: cover; }
+        
+        /* プロフィール表示用スタイル */
+        #profile-view { max-width: 500px; margin: 50px auto; background: white; padding: 30px; border-radius: 15px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .back-link { display: block; margin-top: 20px; color: #2196F3; text-decoration: none; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -44,56 +39,54 @@
             <div id="tab-register" onclick="switchTab('register')">新規作成</div>
         </div>
         <div id="form-login" class="form-area">
-            <h2>ログイン</h2>
-            <div class="input-group">
-                <label>ユーザー名</label>
-                <input type="text" id="login-username" placeholder="ユーザーID">
-            </div>
-            <div class="input-group">
-                <label>パスワード</label>
-                <input type="password" id="login-password" placeholder="••••••••">
-            </div>
+            <div class="input-group"><label>ユーザー名</label><input type="text" id="login-username"></div>
+            <div class="input-group"><label>パスワード</label><input type="password" id="login-password"></div>
             <button class="action-btn" id="btn-do-login">ログイン</button>
-            <div class="error-msg" id="login-error"></div>
+            <div id="login-error" style="color:red; font-size:12px; margin-top:10px;"></div>
         </div>
         <div id="form-register" class="form-area hidden">
-            <h2>新規ユーザー登録</h2>
-            <div class="input-group">
-                <label>登録ユーザー名</label>
-                <input type="text" id="reg-username" placeholder="例: yamada_taro">
-            </div>
-            <div class="input-group">
-                <label>パスワード</label>
-                <input type="password" id="reg-password" placeholder="••••••••">
-            </div>
-            <button class="action-btn" id="btn-do-register" style="background: #34495e;">登録を完了する</button>
-            <div class="error-msg" id="reg-error"></div>
+            <div class="input-group"><label>登録ユーザー名</label><input type="text" id="reg-username"></div>
+            <div class="input-group"><label>パスワード</label><input type="password" id="reg-password"></div>
+            <button class="action-btn" id="btn-do-register" style="background:#34495e;">登録完了</button>
         </div>
+    </div>
+
+    <div id="profile-view" class="hidden">
+        <div class="user-icon" id="view-icon">👤</div>
+        <h2 id="view-name">ユーザー名</h2>
+        <div style="text-align: left; background: #f9f9f9; padding: 15px; border-radius: 10px;">
+            <p>識別ID: <span id="view-uid"></span></p>
+            <p>ポイント: <span id="view-score"></span> pt</p>
+            <p>登録日: <span id="view-start"></span></p>
+        </div>
+        <a href="#" class="back-link" onclick="location.hash=''; location.reload();">ログイン画面へ戻る</a>
     </div>
 
     <div id="app-container" class="hidden">
         <header>
             <div class="hamburger-btn" onclick="toggleSidebar()">☰</div>
-            <h2>Portal Dashboard</h2>
+            <div>Portal Dashboard</div>
+            <div style="font-size: 12px;" id="my-link"></div>
         </header>
         <nav id="sidebar">
-            <div class="close-btn" onclick="toggleSidebar()">✖</div>
-            <h3>アカウント設定</h3>
+            <div class="user-icon" id="my-icon-display" onclick="changeIcon()" style="cursor:pointer;">👤</div>
+            <p style="text-align:center; font-size:12px; color:#666;">アイコンをタップで変更</p>
+            <h3>設定</h3>
             <div class="profile-info">氏名: <span id="disp-name"></span></div>
-            <div class="profile-info">個別識別ID: <span id="disp-uid" style="font-size: 11px; color: #7f8c8d;"></span></div>
-            <div class="profile-info">保有ポイント: <span id="disp-score"></span> pt</div>
-            <div class="profile-info">登録日: <span id="disp-start"></span></div>
-            <button id="btn-logout">ログアウト</button>
+            <div class="profile-info">ID: <span id="disp-uid" style="font-size: 10px;"></span></div>
+            <div class="profile-info">ポイント: <span id="disp-score"></span></div>
+            <button id="btn-logout" style="width:100%; padding:10px; background:#95a5a6; color:white; border:none; border-radius:5px;">ログアウト</button>
         </nav>
-        <main class="main-content">
+        <main style="padding:40px; text-align:center;">
             <h1>こんにちは、<span id="welcome-name"></span>さん</h1>
-            <p>本日のダッシュボードへようこそ。</p>
+            <p>あなたのプロフィールURL:<br>
+            <code id="share-url" style="background:#eee; padding:5px;"></code></p>
         </main>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCwhHspaG94goiCIjVj3h-Un5pBK3JTjMU",
@@ -105,14 +98,75 @@
             appId: "1:358331064206:web:d7760ea0919259418a4edf",
             measurementId: "G-S5Z8TTWYE2"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- ID生成 ---
         const generateUniqueId = () => 'ID-' + Math.random().toString(36).substr(2, 9).toUpperCase();
 
-        // --- UI表示制御 ---
+        // --- アイコン設定 (超軽量: Base64形式) ---
+        window.changeIcon = async () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (file.size > 50000) return alert("画像が大きすぎます(50KB以下にしてください)");
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    const base64Img = event.target.result;
+                    const username = localStorage.getItem("loginnow");
+                    await update(ref(db, `users/${username}`), { icon: base64Img });
+                    location.reload();
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        };
+
+        // --- 表示処理 ---
+        const showApp = (username, userData) => {
+            document.getElementById('auth-container').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            document.getElementById('disp-name').innerText = username;
+            document.getElementById('welcome-name').innerText = username;
+            document.getElementById('disp-uid').innerText = userData.uniqueId;
+            document.getElementById('disp-score').innerText = userData.score;
+            if(userData.icon) document.getElementById('my-icon-display').innerHTML = `<img src="${userData.icon}">`;
+            
+            const url = window.location.href.split('#')[0] + '#' + username;
+            document.getElementById('share-url').innerText = url;
+        };
+
+        // --- URLハッシュ検知 (#名前 の処理) ---
+        const checkHashAndLogin = async () => {
+            const hash = decodeURIComponent(window.location.hash.substring(1));
+            if (hash) {
+                // 他人のプロフィールを表示
+                const snapshot = await get(child(ref(db), `users/${hash}`));
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    document.getElementById('auth-container').classList.add('hidden');
+                    document.getElementById('profile-view').classList.remove('hidden');
+                    document.getElementById('view-name').innerText = hash;
+                    document.getElementById('view-uid').innerText = data.uniqueId;
+                    document.getElementById('view-score').innerText = data.score;
+                    document.getElementById('view-start').innerText = data.startedAt;
+                    if(data.icon) document.getElementById('view-icon').innerHTML = `<img src="${data.icon}">`;
+                    return; 
+                }
+            }
+            
+            // 通常のログインチェック
+            const savedUser = localStorage.getItem("loginnow");
+            if (savedUser) {
+                const snapshot = await get(child(ref(db), `users/${savedUser}`));
+                if (snapshot.exists()) showApp(savedUser, snapshot.val());
+            }
+        };
+
+        window.onload = checkHashAndLogin;
+
+        // ログイン・登録・タブ切替・サイドバー (既存ロジック)
         window.switchTab = (tab) => {
             document.getElementById('tab-login').classList.toggle('active', tab === 'login');
             document.getElementById('tab-register').classList.toggle('active', tab === 'register');
@@ -121,69 +175,31 @@
         };
         window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('open');
 
-        const showApp = (username, userData) => {
-            document.getElementById('auth-container').classList.add('hidden');
-            document.getElementById('app-container').classList.remove('hidden');
-            document.getElementById('disp-name').innerText = username;
-            document.getElementById('welcome-name').innerText = username;
-            document.getElementById('disp-uid').innerText = userData.uniqueId;
-            document.getElementById('disp-score').innerText = userData.score;
-            document.getElementById('disp-start').innerText = userData.startedAt;
-        };
-
-        // ★★★ 保存と検知の仕組み (localStorageを使用) ★★★
-        const checkLoginStatus = async () => {
-            const savedUser = localStorage.getItem("loginnow"); // 保存された名前を取得
-            if (savedUser) {
-                console.log("ログイン情報を検知:", savedUser);
-                try {
-                    const snapshot = await get(child(ref(db), `users/${savedUser}`));
-                    if (snapshot.exists()) {
-                        showApp(savedUser, snapshot.val());
-                    } else {
-                        localStorage.removeItem("loginnow");
-                    }
-                } catch (e) { console.error("データ取得に失敗", e); }
-            }
-        };
-        // 読み込み完了時に実行
-        checkLoginStatus();
-
-        // --- 登録・ログイン処理 ---
         document.getElementById('btn-do-register').onclick = async () => {
             const id = document.getElementById('reg-username').value.trim();
             const pw = document.getElementById('reg-password').value.trim();
             if (!id || !pw) return;
-
-            const userRef = ref(db, 'users/' + id);
-            const snapshot = await get(userRef);
-            if (snapshot.exists()) {
-                document.getElementById('reg-error').innerText = "既に存在します";
-            } else {
-                const data = { uniqueId: generateUniqueId(), password: pw, score: 0, startedAt: new Date().toLocaleDateString() };
-                await set(userRef, data);
-                localStorage.setItem("loginnow", id); // 情報を保存
-                showApp(id, data);
-            }
+            const data = { uniqueId: generateUniqueId(), password: pw, score: 0, startedAt: new Date().toLocaleDateString(), icon: "" };
+            await set(ref(db, 'users/' + id), data);
+            localStorage.setItem("loginnow", id);
+            showApp(id, data);
         };
 
         document.getElementById('btn-do-login').onclick = async () => {
             const id = document.getElementById('login-username').value.trim();
             const pw = document.getElementById('login-password').value.trim();
-            
-            try {
-                const snapshot = await get(child(ref(db), `users/${id}`));
-                if (snapshot.exists() && snapshot.val().password === pw) {
-                    localStorage.setItem("loginnow", id); // 情報を保存
-                    showApp(id, snapshot.val());
-                } else {
-                    document.getElementById('login-error').innerText = "失敗しました";
-                }
-            } catch (e) { alert("エラーが発生しました"); }
+            const snapshot = await get(child(ref(db), `users/${id}`));
+            if (snapshot.exists() && snapshot.val().password === pw) {
+                localStorage.setItem("loginnow", id);
+                showApp(id, snapshot.val());
+            } else {
+                document.getElementById('login-error').innerText = "ログイン失敗";
+            }
         };
 
         document.getElementById('btn-logout').onclick = () => {
-            localStorage.removeItem("loginnow"); // 情報を削除
+            localStorage.removeItem("loginnow");
+            location.hash = "";
             location.reload();
         };
     </script>
