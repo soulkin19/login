@@ -84,6 +84,7 @@
             <div class="user-icon" id="side-icon" style="border:none;">👤</div>
             <div id="disp-name" style="text-align:center; font-weight:bold; margin-bottom:20px;"></div>
             <div class="nav-item" onclick="showSection('home')">🏠 ホーム</div>
+            <div class="nav-item" onclick="window.open('https://soulkin19.github.io/soulch/', '_blank')">💬 掲示板へ行く</div>
             <div class="nav-item" onclick="showSection('members')">👥 ユーザー一覧</div>
             <div class="nav-item" onclick="showSection('ranking')">🏆 ランキング</div>
             <div class="nav-item" onclick="showSection('settings')">⚙️ プロフ設定</div>
@@ -93,6 +94,11 @@
 
         <main id="section-home" class="form-area" style="text-align:center;">
             <h1>おかえりなさい！</h1>
+            
+            <div style="margin-bottom: 20px;">
+                <button class="action-btn" onclick="window.open('https://soulkin19.github.io/soulch/', '_blank')" style="background:#673AB7;">💬 掲示板を開く</button>
+            </div>
+
             <div style="background:#fff7e6; padding:20px; border-radius:10px; border:1px solid #ffe58f; margin-bottom:20px;">
                 <p style="font-size:14px; margin:0 0 10px 0;">ログインボーナス</p>
                 <button id="btn-daily" class="action-btn" style="background:#faad14; width:auto; padding:8px 30px;">5pt 貰う</button>
