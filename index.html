@@ -104,7 +104,7 @@
                 <button id="btn-daily" class="action-btn" style="background:#faad14; width:auto; padding:8px 30px;">5pt 貰う</button>
             </div>
             <div class="stats"><div>所持ポイント<b id="home-score">0</b></div></div>
-            <p style="font-size:11px; color:#999;">あなたのURL: <code id="share-url"></code></p>
+            <p style="font-size:11px; color:#999; margin-top:20px;">あなたのURL:<br><code id="share-url"></code></p>
         </main>
 
         <main id="section-members" class="hidden">
@@ -149,7 +149,6 @@
         const me = localStorage.getItem("loginnow");
         let allUsersCache = {};
 
-        // オンライン更新
         const updateOnline = () => { if(me) update(ref(db, `users/${me}`), { lastActive: serverTimestamp() }); };
         setInterval(updateOnline, 60000);
 
@@ -166,7 +165,6 @@
             if(name === 'ranking') toggleRank('score');
         };
 
-        // 検索機能付きユーザーリスト
         const loadUserList = async () => {
             const snap = await get(ref(db, 'users'));
             if(snap.exists()) {
@@ -194,7 +192,6 @@
             });
         };
 
-        // ランキング機能
         window.toggleRank = async (type) => {
             document.getElementById('tab-rank-score').classList.toggle('active', type==='score');
             document.getElementById('tab-rank-follow').classList.toggle('active', type==='follow');
@@ -216,7 +213,6 @@
             }
         };
 
-        // ログインボーナス
         document.getElementById('btn-daily').onclick = async () => {
             const snap = await get(ref(db, `users/${me}`));
             const last = snap.val().lastBonus || 0;
@@ -226,7 +222,6 @@
             alert("5pt獲得しました！"); location.reload();
         };
 
-        // プロフ設定関連
         window.changeIcon = () => {
             const input = document.createElement('input');
             input.type = 'file'; input.accept = 'image/*';
@@ -242,7 +237,6 @@
             alert("保存完了");
         };
 
-        // 初期化
         const init = async () => {
             const hash = decodeURIComponent(window.location.hash.substring(1));
             updateOnline();
@@ -279,6 +273,10 @@
                     document.getElementById('app-container').style.display = 'flex';
                     document.getElementById('disp-name').innerText = me;
                     document.getElementById('home-score').innerText = d.score || 0;
+                    
+                    // あなたのURLをセットする処理を追加
+                    document.getElementById('share-url').innerText = `https://soulkin19.github.io/login/#${me}`;
+                    
                     if(d.icon) {
                         const img = `<img src="${d.icon}">`;
                         document.getElementById('side-icon').innerHTML = img;
