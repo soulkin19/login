@@ -3,15 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ユーザーポータル v6</title>
+    <title>ユーザーポータル v7</title>
     <style>
-        /* --- 基本デザイン --- */
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #333; }
-        
-        /* 全コンテナを最初は隠す（チラつき防止） */
         #auth-container, #profile-view, #app-container { display: none; max-width: 500px; margin: 30px auto; background: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
         #app-container { max-width: 100%; margin: 0; border-radius: 0; min-height: 100vh; display: none; flex-direction: column; }
-        
         .hidden { display: none !important; }
         .tab-menu { display: flex; background: #eee; }
         .tab-menu div { flex: 1; text-align: center; padding: 15px 0; cursor: pointer; font-weight: bold; color: #888; }
@@ -21,42 +17,31 @@
         .input-group label { display: block; font-size: 12px; margin-bottom: 5px; color: #666; font-weight: bold; }
         .input-group input, .input-group textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
         .action-btn { width: 100%; padding: 12px; background: #2196F3; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        
         header { background: #2c3e50; color: #fff; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
         .hamburger-btn { font-size: 24px; cursor: pointer; }
-        
-        /* サイドバー */
         #sidebar { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: #fff; box-shadow: 2px 0 10px rgba(0,0,0,0.2); transition: 0.3s ease; z-index: 1000; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         #sidebar.open { left: 0; }
         .sidebar-close { text-align: right; font-size: 24px; cursor: pointer; color: #999; margin-bottom: 10px; }
-        .nav-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
-        .nav-item:hover { background: #f9f9f9; }
-        .nav-badge { background: #ff5252; color: white; border-radius: 10px; padding: 2px 8px; font-size: 10px; }
-        
-        /* ユーザー表示 */
-        .user-icon { width: 80px; height: 80px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 10px; overflow: hidden; border: 2px solid #2196F3; }
+        .nav-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .user-icon { width: 80px; height: 80px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 10px; overflow: hidden; border: 2px solid #2196F3; position: relative; }
         .user-icon img { width: 100%; height: 100%; object-fit: cover; }
-        .small-icon { width: 50px; height: 50px; font-size: 24px; }
-
+        .online-dot { width: 12px; height: 12px; background: #4CAF50; border: 2px solid white; border-radius: 50%; position: absolute; bottom: 5px; right: 5px; display: none; }
+        .online .online-dot { display: block; }
         .user-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; padding: 15px; }
-        .user-card { background: #fff; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; text-decoration: none; color: inherit; transition: 0.2s; }
-        
-        .stats { display: flex; justify-content: space-around; margin: 20px 0; background: #f9f9f9; padding: 10px; border-radius: 10px; }
-        .stats b { display: block; font-size: 18px; color: #2196F3; }
-
-        /* 通知アイテム */
-        .notif-item { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; line-height: 1.4; }
-        .notif-time { color: #999; font-size: 11px; margin-top: 4px; }
+        .user-card { background: #fff; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; text-decoration: none; color: inherit; position: relative; }
+        .rank-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .rank-num { font-size: 20px; font-weight: bold; margin-right: 15px; color: #FF9800; width: 30px; }
+        .notif-item { padding: 12px; border-bottom: 1px solid #eee; font-size: 13px; }
     </style>
 </head>
 <body>
 
     <div id="profile-view">
         <div class="form-area" style="text-align:center;">
-            <div class="user-icon" id="view-icon">👤</div>
+            <div class="user-icon" id="view-icon">👤<div class="online-dot"></div></div>
             <h2 id="view-name">ユーザー名</h2>
             <button id="btn-follow" class="action-btn" style="width: auto; padding: 8px 20px; margin-bottom: 10px;">フォローする</button>
-            <div id="view-bio" style="background:#f0f4f8; padding:15px; border-radius:10px; text-align:left; font-size:14px; margin:15px 0; min-height:40px; white-space: pre-wrap;"></div>
+            <div id="view-bio" style="background:#f0f4f8; padding:15px; border-radius:10px; text-align:left; font-size:14px; margin:15px 0; min-height:40px;"></div>
             <div class="stats">
                 <div>👀 <b id="view-count">0</b></div>
                 <div>💰 <b id="view-score">0</b></div>
@@ -66,7 +51,7 @@
                 <input type="number" id="tip-amount" placeholder="数" style="width: 70px; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
                 <button id="btn-tip" class="action-btn" style="background:#FF9800; width: auto; padding: 10px 20px;">pt 送る</button>
             </div>
-            <a href="#" style="display:block; color:#2196F3; font-size:14px;" onclick="location.hash=''; location.reload();">閉じる / ホームへ</a>
+            <a href="#" style="display:block; color:#2196F3;" onclick="location.hash=''; location.reload();">閉じる</a>
         </div>
     </div>
 
@@ -97,56 +82,46 @@
         <nav id="sidebar">
             <div class="sidebar-close" onclick="toggleSidebar()">×</div>
             <div class="user-icon" id="side-icon" style="border:none;">👤</div>
-            <div style="text-align:center; font-size:14px; margin-bottom:20px; font-weight:bold;"><span id="disp-name"></span></div>
-            
+            <div id="disp-name" style="text-align:center; font-weight:bold; margin-bottom:20px;"></div>
             <div class="nav-item" onclick="showSection('home')">🏠 ホーム</div>
             <div class="nav-item" onclick="showSection('members')">👥 ユーザー一覧</div>
+            <div class="nav-item" onclick="showSection('ranking')">🏆 ランキング</div>
             <div class="nav-item" onclick="showSection('settings')">⚙️ プロフ設定</div>
-            <div class="nav-item" onclick="showSection('ff')">❤️ FF一覧</div>
-            <div class="nav-item" onclick="showSection('notifications')">
-                🔔 通知 <span id="notif-badge" class="nav-badge hidden">!</span>
-            </div>
-            
-            <button id="btn-logout" style="width:100%; padding:10px; background:#eee; border:none; border-radius:5px; margin-top:30px; cursor:pointer;">ログアウト</button>
+            <div class="nav-item" onclick="showSection('notifications')">🔔 通知</div>
+            <button id="btn-logout" style="width:100%; padding:10px; background:#eee; border:none; border-radius:5px; margin-top:30px;">ログアウト</button>
         </nav>
 
         <main id="section-home" class="form-area" style="text-align:center;">
-            <h1>こんにちは！</h1>
-            <div class="stats" style="background:white; border:1px solid #eee;">
-                <div>現在のポイント<b id="home-score">0</b></div>
+            <h1>おかえりなさい！</h1>
+            <div style="background:#fff7e6; padding:20px; border-radius:10px; border:1px solid #ffe58f; margin-bottom:20px;">
+                <p style="font-size:14px; margin:0 0 10px 0;">ログインボーナス</p>
+                <button id="btn-daily" class="action-btn" style="background:#faad14; width:auto; padding:8px 30px;">5pt 貰う</button>
             </div>
-            <p style="font-size:12px; color:#666;">あなたのマイページURL:</p>
-            <code id="share-url" style="background:#f0f0f0; padding:10px; font-size:10px; display:block; word-break:break-all;"></code>
+            <div class="stats"><div>所持ポイント<b id="home-score">0</b></div></div>
+            <p style="font-size:11px; color:#999;">あなたのURL: <code id="share-url"></code></p>
         </main>
 
         <main id="section-members" class="hidden">
+            <div style="padding:15px;"><input type="text" id="user-search" placeholder="ユーザー検索..." style="width:100%; padding:10px; border-radius:20px; border:1px solid #ddd;"></div>
             <div id="user-list-area" class="user-list"></div>
+        </main>
+
+        <main id="section-ranking" class="hidden">
+            <div class="tab-menu">
+                <div id="tab-rank-score" class="active" onclick="toggleRank('score')">ポイント</div>
+                <div id="tab-rank-follow" onclick="toggleRank('follow')">フォロワー</div>
+            </div>
+            <div id="rank-list-area" style="padding:10px;"></div>
         </main>
 
         <main id="section-settings" class="hidden form-area">
             <h3>プロフ設定</h3>
-            <div class="user-icon" id="settings-icon-disp" onclick="changeIcon()" style="cursor:pointer; position:relative;">
-                👤
-                <div style="position:absolute; bottom:0; background:rgba(0,0,0,0.5); color:white; font-size:10px; width:100%;">変更</div>
-            </div>
-            <div class="input-group">
-                <label>自己紹介 (100文字以内)</label>
-                <textarea id="settings-bio-input" rows="4" placeholder="自己紹介を書いてみよう"></textarea>
-            </div>
-            <button class="action-btn" onclick="saveBio()">プロフィールを保存</button>
+            <div class="user-icon" id="settings-icon-disp" onclick="changeIcon()" style="cursor:pointer;">👤</div>
+            <div class="input-group"><label>自己紹介</label><textarea id="settings-bio-input" rows="4"></textarea></div>
+            <button class="action-btn" onclick="saveBio()">保存</button>
         </main>
 
-        <main id="section-ff" class="hidden">
-            <div class="tab-menu" style="background:none; border-bottom:1px solid #eee;">
-                <div id="tab-ff-follower" class="active" onclick="toggleFF('follower')">フォロワー</div>
-                <div id="tab-ff-following" onclick="toggleFF('following')">フォロー中</div>
-            </div>
-            <div id="ff-list-area" class="user-list"></div>
-        </main>
-
-        <main id="section-notifications" class="hidden">
-            <div id="notif-list-area"></div>
-        </main>
+        <main id="section-notifications" class="hidden" id="notif-list-area"></main>
     </div>
 
     <script type="module">
@@ -165,174 +140,132 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- 基本制御 ---
+        const me = localStorage.getItem("loginnow");
+        let allUsersCache = {};
+
+        // オンライン更新
+        const updateOnline = () => { if(me) update(ref(db, `users/${me}`), { lastActive: serverTimestamp() }); };
+        setInterval(updateOnline, 60000);
+
         window.switchTab = (t) => {
             document.getElementById('form-login').classList.toggle('hidden', t!=='login');
             document.getElementById('form-register').classList.toggle('hidden', t!=='register');
-            document.getElementById('tab-login').classList.toggle('active', t==='login');
-            document.getElementById('tab-register').classList.toggle('active', t==='register');
         };
         window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('open');
         
         window.showSection = (name) => {
-            const sections = ['home', 'members', 'settings', 'ff', 'notifications'];
-            sections.forEach(s => document.getElementById(`section-${s}`).classList.toggle('hidden', s !== name));
-            document.getElementById('page-title').innerText = 
-                name === 'home' ? 'ホーム' : (name === 'members' ? 'ユーザー一覧' : (name === 'settings' ? 'プロフ設定' : (name === 'ff' ? 'FF一覧' : '通知')));
-            
-            if(name === 'members') loadUserList();
-            if(name === 'ff') toggleFF('follower');
-            if(name === 'notifications') loadNotifications();
+            ['home', 'members', 'ranking', 'settings', 'notifications'].forEach(s => document.getElementById(`section-${s}`).classList.toggle('hidden', s !== name));
             document.getElementById('sidebar').classList.remove('open');
+            if(name === 'members') loadUserList();
+            if(name === 'ranking') toggleRank('score');
         };
 
-        // --- 通知を送る関数 ---
-        const addNotif = async (target, type, from, amount = 0) => {
-            const notifRef = ref(db, `users/${target}/notifications`);
-            const newNotif = push(notifRef);
-            await set(newNotif, { type, from, amount, time: serverTimestamp() });
-        };
-
-        // --- 通知読み込み ---
-        const loadNotifications = async () => {
-            const me = localStorage.getItem("loginnow");
-            const snap = await get(ref(db, `users/${me}/notifications`));
-            const area = document.getElementById('notif-list-area');
-            area.innerHTML = "";
-            if(snap.exists()){
-                const data = Object.values(snap.val()).reverse(); // 新しい順
-                data.forEach(n => {
-                    const div = document.createElement('div');
-                    div.className = 'notif-item';
-                    let msg = "";
-                    if(n.type === 'tip') msg = `<b>${n.from}</b> さんから <b>${n.amount}pt</b> 届きました！`;
-                    if(n.type === 'follow') msg = `<b>${n.from}</b> さんにフォローされました。`;
-                    div.innerHTML = `${msg}<div class="notif-time">${new Date(n.time).toLocaleString()}</div>`;
-                    area.appendChild(div);
-                });
-            } else {
-                area.innerHTML = "<p style='text-align:center; color:#999; margin-top:20px;'>通知はありません</p>";
-            }
-        };
-
-        // --- ユーザーリスト ---
+        // 検索機能付きユーザーリスト
         const loadUserList = async () => {
             const snap = await get(ref(db, 'users'));
-            const area = document.getElementById('user-list-area');
-            area.innerHTML = "読み込み中...";
-            if(snap.exists()){
-                area.innerHTML = "";
-                Object.entries(snap.val()).forEach(([name, data]) => {
-                    const card = document.createElement('a');
-                    card.className = 'user-card';
-                    card.href = "#" + encodeURIComponent(name);
-                    card.onclick = () => setTimeout(() => location.reload(), 50);
-                    card.innerHTML = `
-                        <div class="user-icon small-icon">${data.icon ? `<img src="${data.icon}">` : '👤'}</div>
-                        <div style="font-weight:bold; font-size:13px;">${name}</div>
-                    `;
-                    area.appendChild(card);
-                });
+            if(snap.exists()) {
+                allUsersCache = snap.val();
+                renderUsers(allUsersCache);
+                document.getElementById('user-search').oninput = (e) => {
+                    const word = e.target.value.toLowerCase();
+                    const filtered = Object.fromEntries(Object.entries(allUsersCache).filter(([n]) => n.toLowerCase().includes(word)));
+                    renderUsers(filtered);
+                };
             }
         };
 
-        // --- FF一覧 ---
-        window.toggleFF = async (type) => {
-            document.getElementById('tab-ff-follower').classList.toggle('active', type==='follower');
-            document.getElementById('tab-ff-following').classList.toggle('active', type==='following');
-            const me = localStorage.getItem("loginnow");
+        const renderUsers = (users) => {
+            const area = document.getElementById('user-list-area');
+            area.innerHTML = "";
+            const now = Date.now();
+            Object.entries(users).forEach(([name, d]) => {
+                const isOnline = d.lastActive && (now - d.lastActive < 300000);
+                const card = document.createElement('div');
+                card.className = `user-card ${isOnline ? 'online' : ''}`;
+                card.innerHTML = `<div class="user-icon small-icon">${d.icon ? `<img src="${d.icon}">` : '👤'}<div class="online-dot"></div></div><div style="font-size:12px;">${name}</div>`;
+                card.onclick = () => { location.hash = name; location.reload(); };
+                area.appendChild(card);
+            });
+        };
+
+        // ランキング機能
+        window.toggleRank = async (type) => {
+            document.getElementById('tab-rank-score').classList.toggle('active', type==='score');
+            document.getElementById('tab-rank-follow').classList.toggle('active', type==='follow');
             const snap = await get(ref(db, 'users'));
-            const area = document.getElementById('ff-list-area');
+            const area = document.getElementById('rank-list-area');
             area.innerHTML = "";
             if(snap.exists()){
-                const all = snap.val();
-                const myData = all[me];
-                const list = (type === 'follower') ? (myData.followers ? Object.keys(myData.followers) : []) 
-                                                   : (myData.following ? Object.keys(myData.following) : []);
-                if(list.length === 0) return area.innerHTML = `<p style='grid-column:1/-1; text-align:center; color:#999;'>${type==='follower'?'フォロワー':'フォロー'}はいません</p>`;
-                
-                list.forEach(name => {
-                    const data = all[name];
-                    const card = document.createElement('a');
-                    card.className = 'user-card';
-                    card.href = "#" + encodeURIComponent(name);
-                    card.onclick = () => setTimeout(() => location.reload(), 50);
-                    card.innerHTML = `<div class="user-icon small-icon">${data.icon ? `<img src="${data.icon}">` : '👤'}</div><div>${name}</div>`;
-                    area.appendChild(card);
+                const sorted = Object.entries(snap.val()).sort((a, b) => {
+                    if(type === 'score') return (b[1].score || 0) - (a[1].score || 0);
+                    const af = a[1].followers ? Object.keys(a[1].followers).length : 0;
+                    const bf = b[1].followers ? Object.keys(b[1].followers).length : 0;
+                    return bf - af;
+                }).slice(0, 5);
+
+                sorted.forEach(([name, d], i) => {
+                    const val = type === 'score' ? (d.score || 0) + " pt" : (d.followers ? Object.keys(d.followers).length : 0) + " followers";
+                    area.innerHTML += `<div class="rank-item"><div class="rank-num">${i+1}</div><div class="user-icon small-icon" style="margin:0 10px 0 0;">${d.icon ? `<img src="${d.icon}">` : '👤'}</div><div><b>${name}</b><br><small>${val}</small></div></div>`;
                 });
             }
         };
 
-        // --- 設定保存 ---
+        // ログインボーナス
+        document.getElementById('btn-daily').onclick = async () => {
+            const snap = await get(ref(db, `users/${me}`));
+            const last = snap.val().lastBonus || 0;
+            const today = new Date().toDateString();
+            if (last === today) return alert("今日はもう貰いました！");
+            await update(ref(db, `users/${me}`), { score: increment(5), lastBonus: today });
+            alert("5pt獲得しました！"); location.reload();
+        };
+
+        // プロフ設定関連
         window.changeIcon = () => {
             const input = document.createElement('input');
             input.type = 'file'; input.accept = 'image/*';
             input.onchange = e => {
                 const reader = new FileReader();
-                reader.onload = async (ev) => {
-                    await update(ref(db, `users/${localStorage.getItem("loginnow")}`), { icon: ev.target.result });
-                    location.reload();
-                };
+                reader.onload = async (ev) => { await update(ref(db, `users/${me}`), { icon: ev.target.result }); location.reload(); };
                 reader.readAsDataURL(e.target.files[0]);
             };
             input.click();
         };
-
         window.saveBio = async () => {
-            const me = localStorage.getItem("loginnow");
-            const bio = document.getElementById('settings-bio-input').value;
-            await update(ref(db, `users/${me}`), { bio: bio });
-            alert("保存しました！");
+            await update(ref(db, `users/${me}`), { bio: document.getElementById('settings-bio-input').value });
+            alert("保存完了");
         };
 
-        // --- メインロジック ---
+        // 初期化
         const init = async () => {
             const hash = decodeURIComponent(window.location.hash.substring(1));
-            const me = localStorage.getItem("loginnow");
-
+            updateOnline();
             if (hash) {
                 const snap = await get(child(ref(db), `users/${hash}`));
                 if (snap.exists()) {
                     const d = snap.val();
-                    if (!sessionStorage.getItem('v_' + hash)) {
-                        update(ref(db, `users/${hash}`), { views: increment(1) });
-                        sessionStorage.setItem('v_' + hash, 'true');
-                    }
+                    const isOnline = d.lastActive && (Date.now() - d.lastActive < 300000);
                     document.getElementById('profile-view').style.display = 'block';
+                    if(isOnline) document.getElementById('profile-view').classList.add('online');
                     document.getElementById('view-name').innerText = hash;
-                    document.getElementById('view-bio').innerText = d.bio || "自己紹介はありません";
-                    document.getElementById('view-count').innerText = d.views || 0;
+                    document.getElementById('view-bio').innerText = d.bio || "";
                     document.getElementById('view-score').innerText = d.score || 0;
                     document.getElementById('view-followers').innerText = d.followers ? Object.keys(d.followers).length : 0;
-                    if(d.icon) document.getElementById('view-icon').innerHTML = `<img src="${d.icon}">`;
-
-                    const btnF = document.getElementById('btn-follow');
-                    if(me && me !== hash){
-                        const isF = d.followers && d.followers[me];
-                        btnF.innerText = isF ? "フォロー解除" : "フォローする";
-                        btnF.onclick = async () => {
-                            const paths = { [`users/${hash}/followers/${me}`]: isF ? null : true, [`users/${me}/following/${hash}`]: isF ? null : true };
-                            await update(ref(db), paths);
-                            if(!isF) await addNotif(hash, 'follow', me);
-                            location.reload();
-                        };
-                    } else btnF.classList.add('hidden');
-
+                    if(d.icon) document.getElementById('view-icon').innerHTML = `<img src="${d.icon}"><div class="online-dot"></div>`;
+                    
                     document.getElementById('btn-tip').onclick = async () => {
                         const amt = parseInt(document.getElementById('tip-amount').value);
-                        if(!me) return alert("ログインしてね");
-                        if(isNaN(amt) || amt <= 0) return alert("数を入力してね");
+                        if(isNaN(amt) || amt <= 0) return alert("数値を入力");
                         const myS = await get(ref(db, `users/${me}`));
-                        if(myS.val().score < amt) return alert("ポイント不足");
+                        if(myS.val().score < amt) return alert("不足");
                         await update(ref(db, `users/${me}`), { score: increment(-amt) });
                         await update(ref(db, `users/${hash}`), { score: increment(amt) });
-                        await addNotif(hash, 'tip', me, amt);
-                        alert("送りました！"); location.reload();
+                        push(ref(db, `users/${hash}/notifications`), { type: 'tip', from: me, amount: amt, time: serverTimestamp() });
+                        alert("送金完了"); location.reload();
                     };
                     return;
                 }
             }
-
             if (me) {
                 const snap = await get(child(ref(db), `users/${me}`));
                 if (snap.exists()) {
@@ -340,34 +273,23 @@
                     document.getElementById('app-container').style.display = 'flex';
                     document.getElementById('disp-name').innerText = me;
                     document.getElementById('home-score').innerText = d.score || 0;
-                    document.getElementById('settings-bio-input').value = d.bio || "";
                     if(d.icon) {
                         const img = `<img src="${d.icon}">`;
                         document.getElementById('side-icon').innerHTML = img;
                         document.getElementById('settings-icon-disp').innerHTML = img;
                     }
-                    document.getElementById('share-url').innerText = window.location.origin + window.location.pathname + "#" + me;
-                } else {
-                    localStorage.removeItem("loginnow"); location.reload();
                 }
-            } else {
-                document.getElementById('auth-container').style.display = 'block';
-            }
+            } else { document.getElementById('auth-container').style.display = 'block'; }
         };
-
         init();
 
-        // ログイン・登録
         document.getElementById('btn-do-register').onclick = async () => {
             const id = document.getElementById('reg-username').value.trim();
             const pw = document.getElementById('reg-password').value.trim();
             if(!id || !pw) return;
-            const snap = await get(child(ref(db), `users/${id}`));
-            if(snap.exists()) return alert("既に存在します");
             await set(ref(db, 'users/'+id), { password:pw, score:0, views:0, bio:"" });
             localStorage.setItem("loginnow", id); location.reload();
         };
-
         document.getElementById('btn-do-login').onclick = async () => {
             const id = document.getElementById('login-username').value.trim();
             const pw = document.getElementById('login-password').value.trim();
@@ -376,10 +298,7 @@
                 localStorage.setItem("loginnow", id); location.reload();
             } else alert("間違い");
         };
-
-        document.getElementById('btn-logout').onclick = () => {
-            localStorage.removeItem("loginnow"); location.hash = ""; location.reload();
-        };
+        document.getElementById('btn-logout').onclick = () => { localStorage.removeItem("loginnow"); location.hash=""; location.reload(); };
     </script>
 </body>
 </html>
