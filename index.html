@@ -2,39 +2,38 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Firebase Auth Login</title>
+    <title>RTDB Login System</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; }
+        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+        .box { border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
         .hidden { display: none; }
-        .menu { border: 1px solid #ccc; padding: 10px; width: 250px; margin-top: 10px; }
+        .score-info { color: blue; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h2>Firebase 認証デモ</h2>
+    <h2>簡易RTDBログインシステム</h2>
 
-    <div id="auth-section">
-        <input type="email" id="email" placeholder="メールアドレス"><br>
+    <div id="auth-ui" class="box">
+        <input type="text" id="username" placeholder="ユーザーID（名前）"><br>
         <input type="password" id="password" placeholder="パスワード"><br><br>
-        <button id="btn-signup">新規登録</button>
+        <button id="btn-register">新規登録</button>
         <button id="btn-login">ログイン</button>
     </div>
 
-    <div id="user-section" class="hidden">
-        <div class="menu">
-            <h3>メニュー</h3>
-            <p>ユーザー: <span id="user-email"></span></p>
-            <p>UID: <small id="user-uid"></small></p>
-            <button id="btn-logout">ログアウト</button>
-        </div>
+    <div id="menu-ui" class="box hidden">
+        <h3>ようこそ <span id="disp-name"></span> さん</h3>
+        <p class="score-info">現在のスコア: <span id="disp-score"></span></p>
+        <p>開始日: <span id="disp-start"></span></p>
+        <hr>
+        <button id="btn-logout">ログアウト</button>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } 
-            from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // ご提示いただいた設定
+        // Firebase設定
         const firebaseConfig = {
             apiKey: "AIzaSyCwhHspaG94goiCIjVj3h-Un5pBK3JTjMU",
             authDomain: "soulkin-aa3b7.firebaseapp.com",
@@ -47,46 +46,68 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+        const db = getDatabase(app);
 
-        // 要素の取得
-        const emailInput = document.getElementById('email');
-        const passInput = document.getElementById('password');
-        const authSection = document.getElementById('auth-section');
-        const userSection = document.getElementById('user-section');
-        const userEmail = document.getElementById('user-email');
-        const userUid = document.getElementById('user-uid');
+        // ログイン状態を保持する簡易変数（リロードすると消えます）
+        // ※永続化したい場合は localStorage.setItem('loginUser', ...) を使います
+        let currentUser = null;
 
-        // 1. 新規登録
-        document.getElementById('btn-signup').onclick = async () => {
-            try {
-                await createUserWithEmailAndPassword(auth, emailInput.value, passInput.value);
-                alert("登録完了！");
-            } catch (e) { alert("エラー: " + e.message); }
-        };
+        // --- 1. 新規登録 ---
+        document.getElementById('btn-register').onclick = async () => {
+            const id = document.getElementById('username').value;
+            const pw = document.getElementById('password').value;
+            if(!id || !pw) return alert("入力してください");
 
-        // 2. ログイン
-        document.getElementById('btn-login').onclick = async () => {
-            try {
-                await signInWithEmailAndPassword(auth, emailInput.value, passInput.value);
-            } catch (e) { alert("ログイン失敗: " + e.message); }
-        };
-
-        // 3. ログアウト
-        document.getElementById('btn-logout').onclick = () => signOut(auth);
-
-        // 4. ログイン状態の監視（リロードしてもここが走る）
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                authSection.classList.add('hidden');
-                userSection.classList.remove('hidden');
-                userEmail.innerText = user.email;
-                userUid.innerText = user.uid;
+            const userRef = ref(db, 'users/' + id);
+            
+            // 既にユーザーがいるか確認
+            const snapshot = await get(userRef);
+            if (snapshot.exists()) {
+                alert("そのIDは既に使われています");
             } else {
-                authSection.classList.remove('hidden');
-                userSection.classList.add('hidden');
+                await set(userRef, {
+                    password: pw,
+                    score: 0,
+                    startedAt: new Date().toLocaleDateString()
+                });
+                alert("登録完了！ログインしてください");
             }
-        });
+        };
+
+        // --- 2. ログイン（DBの中身をチェック） ---
+        document.getElementById('btn-login').onclick = async () => {
+            const id = document.getElementById('username').value;
+            const pw = document.getElementById('password').value;
+
+            const dbRef = ref(db);
+            try {
+                const snapshot = await get(child(dbRef, `users/${id}`));
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
+                    if(userData.password === pw) {
+                        showMenu(id, userData);
+                    } else {
+                        alert("パスワードが違います");
+                    }
+                } else {
+                    alert("ユーザーが見つかりません");
+                }
+            } catch (e) { console.error(e); }
+        };
+
+        // UI切り替え
+        function showMenu(id, data) {
+            document.getElementById('auth-ui').classList.add('hidden');
+            document.getElementById('menu-ui').classList.remove('hidden');
+            document.getElementById('disp-name').innerText = id;
+            document.getElementById('disp-score').innerText = data.score;
+            document.getElementById('disp-start').innerText = data.startedAt;
+        }
+
+        // ログアウト
+        document.getElementById('btn-logout').onclick = () => {
+            location.reload(); // 簡易的にリロードで初期化
+        };
     </script>
 </body>
 </html>
