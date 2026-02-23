@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Firebase Auth Login</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .hidden { display: none; }
+        .menu { border: 1px solid #ccc; padding: 10px; width: 250px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h2>Firebase 認証デモ</h2>
+
+    <div id="auth-section">
+        <input type="email" id="email" placeholder="メールアドレス"><br>
+        <input type="password" id="password" placeholder="パスワード"><br><br>
+        <button id="btn-signup">新規登録</button>
+        <button id="btn-login">ログイン</button>
+    </div>
+
+    <div id="user-section" class="hidden">
+        <div class="menu">
+            <h3>メニュー</h3>
+            <p>ユーザー: <span id="user-email"></span></p>
+            <p>UID: <small id="user-uid"></small></p>
+            <button id="btn-logout">ログアウト</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } 
+            from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        // ご提示いただいた設定
+        const firebaseConfig = {
+            apiKey: "AIzaSyCwhHspaG94goiCIjVj3h-Un5pBK3JTjMU",
+            authDomain: "soulkin-aa3b7.firebaseapp.com",
+            databaseURL: "https://soulkin-aa3b7-default-rtdb.firebaseio.com",
+            projectId: "soulkin-aa3b7",
+            storageBucket: "soulkin-aa3b7.firebasestorage.app",
+            messagingSenderId: "358331064206",
+            appId: "1:358331064206:web:d7760ea0919259418a4edf",
+            measurementId: "G-S5Z8TTWYE2"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // 要素の取得
+        const emailInput = document.getElementById('email');
+        const passInput = document.getElementById('password');
+        const authSection = document.getElementById('auth-section');
+        const userSection = document.getElementById('user-section');
+        const userEmail = document.getElementById('user-email');
+        const userUid = document.getElementById('user-uid');
+
+        // 1. 新規登録
+        document.getElementById('btn-signup').onclick = async () => {
+            try {
+                await createUserWithEmailAndPassword(auth, emailInput.value, passInput.value);
+                alert("登録完了！");
+            } catch (e) { alert("エラー: " + e.message); }
+        };
+
+        // 2. ログイン
+        document.getElementById('btn-login').onclick = async () => {
+            try {
+                await signInWithEmailAndPassword(auth, emailInput.value, passInput.value);
+            } catch (e) { alert("ログイン失敗: " + e.message); }
+        };
+
+        // 3. ログアウト
+        document.getElementById('btn-logout').onclick = () => signOut(auth);
+
+        // 4. ログイン状態の監視（リロードしてもここが走る）
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                authSection.classList.add('hidden');
+                userSection.classList.remove('hidden');
+                userEmail.innerText = user.email;
+                userUid.innerText = user.uid;
+            } else {
+                authSection.classList.remove('hidden');
+                userSection.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
