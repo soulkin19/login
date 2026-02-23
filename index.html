@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ユーザーポータル</title>
     <style>
-        /* --- デザイン（変更なし：モダンなスタイル） --- */
+        /* --- デザイン（変更なし） --- */
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #333; }
         .hidden { display: none !important; }
 
@@ -43,7 +43,6 @@
             <div id="tab-login" class="active" onclick="switchTab('login')">ログイン</div>
             <div id="tab-register" onclick="switchTab('register')">新規作成</div>
         </div>
-
         <div id="form-login" class="form-area">
             <h2>ログイン</h2>
             <div class="input-group">
@@ -57,7 +56,6 @@
             <button class="action-btn" id="btn-do-login">ログイン</button>
             <div class="error-msg" id="login-error"></div>
         </div>
-
         <div id="form-register" class="form-area hidden">
             <h2>新規ユーザー登録</h2>
             <div class="input-group">
@@ -78,7 +76,6 @@
             <div class="hamburger-btn" onclick="toggleSidebar()">☰</div>
             <h2>Portal Dashboard</h2>
         </header>
-
         <nav id="sidebar">
             <div class="close-btn" onclick="toggleSidebar()">✖</div>
             <h3>アカウント設定</h3>
@@ -88,11 +85,9 @@
             <div class="profile-info">登録日: <span id="disp-start"></span></div>
             <button id="btn-logout">ログアウト</button>
         </nav>
-
         <main class="main-content">
             <h1>こんにちは、<span id="welcome-name"></span>さん</h1>
             <p>本日のダッシュボードへようこそ。</p>
-            <p>メニューからプロファイル情報を確認できます。</p>
         </main>
     </div>
 
@@ -114,34 +109,38 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- 設定・ユーティリティ ---
-        const generateUniqueId = () => 'ID-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-        
-        const getCookie = (name) => {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop().split(';').shift();
-            return null;
-        };
-
-        const setCookie = (name, value, days = 30) => { // 30日間保持
+        // --- 1. クッキー操作関数 ---
+        const setCookie = (name, value, days = 30) => {
             const date = new Date();
             date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
             document.cookie = `${name}=${value};expires=${date.toUTCString()};path=/`;
         };
 
-        const deleteCookie = (name) => {
-            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+        const getCookie = (name) => {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for(let i=0;i < ca.length;i++) {
+                let c = ca[i];
+                while (c.charAt(0)==' ') c = c.substring(1,c.length);
+                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+            }
+            return null;
         };
 
-        // --- UI表示制御 ---
+        const deleteCookie = (name) => {
+            document.cookie = name + '=; Max-Age=-99999999; path=/;';
+        };
+
+        // --- 2. ID生成 ---
+        const generateUniqueId = () => 'ID-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+
+        // --- 3. UI表示制御 ---
         window.switchTab = (tab) => {
             document.getElementById('tab-login').classList.toggle('active', tab === 'login');
             document.getElementById('tab-register').classList.toggle('active', tab === 'register');
             document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
             document.getElementById('form-register').classList.toggle('hidden', tab !== 'register');
         };
-
         window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('open');
 
         const showApp = (username, userData) => {
@@ -154,16 +153,23 @@
             document.getElementById('disp-start').innerText = userData.startedAt;
         };
 
-        // --- 実行処理 ---
-        window.onload = async () => {
-            const savedUser = getCookie("loginnow");
+        // ★★★ 4. クッキーを検知する仕組み（自動ログイン） ★★★
+        // ページ読み込み時に即座に実行される
+        const checkLoginStatus = async () => {
+            const savedUser = getCookie("loginnow"); // クッキーから名前を取得
             if (savedUser) {
+                console.log("Cookie検知:", savedUser);
                 const snapshot = await get(child(ref(db), `users/${savedUser}`));
-                if (snapshot.exists()) showApp(savedUser, snapshot.val());
-                else deleteCookie("loginnow");
+                if (snapshot.exists()) {
+                    showApp(savedUser, snapshot.val());
+                } else {
+                    deleteCookie("loginnow"); // DBにデータがなければクッキーを掃除
+                }
             }
         };
+        checkLoginStatus(); // 実行
 
+        // --- 5. 登録・ログイン処理 ---
         document.getElementById('btn-do-register').onclick = async () => {
             const id = document.getElementById('reg-username').value.trim();
             const pw = document.getElementById('reg-password').value.trim();
@@ -172,11 +178,11 @@
             const userRef = ref(db, 'users/' + id);
             const snapshot = await get(userRef);
             if (snapshot.exists()) {
-                document.getElementById('reg-error').innerText = "既に登録済みです";
+                document.getElementById('reg-error').innerText = "既に存在します";
             } else {
                 const data = { uniqueId: generateUniqueId(), password: pw, score: 0, startedAt: new Date().toLocaleDateString() };
                 await set(userRef, data);
-                setCookie("loginnow", id);
+                setCookie("loginnow", id); // 登録時にクッキー保存
                 showApp(id, data);
             }
         };
@@ -186,15 +192,15 @@
             const pw = document.getElementById('login-password').value.trim();
             const snapshot = await get(child(ref(db), `users/${id}`));
             if (snapshot.exists() && snapshot.val().password === pw) {
-                setCookie("loginnow", id);
+                setCookie("loginnow", id); // ログイン時にクッキー保存
                 showApp(id, snapshot.val());
             } else {
-                document.getElementById('login-error').innerText = "IDまたはパスワードが違います";
+                document.getElementById('login-error').innerText = "失敗しました";
             }
         };
 
         document.getElementById('btn-logout').onclick = () => {
-            deleteCookie("loginnow");
+            deleteCookie("loginnow"); // クッキー削除
             location.reload();
         };
     </script>
