@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ユーザーポータル v4</title>
+    <title>ユーザーポータル v5</title>
     <style>
+        /* --- 基本デザイン --- */
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #333; }
+        
+        /* 全コンテナを最初は隠す（チラつき防止） */
+        #auth-container, #profile-view, #app-container { display: none; max-width: 500px; margin: 30px auto; background: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
+        #app-container { max-width: 100%; margin: 0; border-radius: 0; min-height: 100vh; }
+        
         .hidden { display: none !important; }
-        
-        /* 認証・プロフィール共通 */
-        #auth-container, #profile-view, #app-container { max-width: 500px; margin: 30px auto; background: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
-        #app-container { max-width: 100%; margin: 0; border-radius: 0; min-height: 100vh; box-shadow: none; }
-        
         .tab-menu { display: flex; background: #eee; }
         .tab-menu div { flex: 1; text-align: center; padding: 15px 0; cursor: pointer; font-weight: bold; color: #888; }
         .tab-menu div.active { background: #fff; color: #2196F3; border-bottom: 3px solid #2196F3; }
@@ -28,38 +29,37 @@
         #sidebar { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: #fff; box-shadow: 2px 0 10px rgba(0,0,0,0.2); transition: 0.3s ease; z-index: 1000; padding: 20px; box-sizing: border-box; overflow-y: auto; }
         #sidebar.open { left: 0; }
         .sidebar-close { text-align: right; font-size: 24px; cursor: pointer; color: #999; margin-bottom: 10px; }
-        .nav-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; font-weight: bold; }
+        .nav-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; font-weight: bold; font-size: 14px; }
         .nav-item:hover { background: #f9f9f9; }
         
         .user-icon { width: 80px; height: 80px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 10px; overflow: hidden; border: 2px solid #2196F3; }
         .user-icon img { width: 100%; height: 100%; object-fit: cover; }
         
-        /* ユーザーリスト */
-        .user-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; padding: 20px; }
-        .user-card { background: #fff; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; text-decoration: none; color: inherit; }
-        .user-card:hover { transform: translateY(-3px); }
+        /* ユーザーカード表示 */
+        .user-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; padding: 15px; }
+        .user-card { background: #fff; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; text-decoration: none; color: inherit; transition: 0.2s; }
+        .user-card:hover { transform: translateY(-2px); }
         .small-icon { width: 50px; height: 50px; font-size: 24px; }
 
-        /* スタッツ表示 */
         .stats { display: flex; justify-content: space-around; margin: 20px 0; background: #f9f9f9; padding: 10px; border-radius: 10px; }
         .stats b { display: block; font-size: 18px; color: #2196F3; }
     </style>
 </head>
 <body>
 
-    <div id="profile-view" class="hidden">
+    <div id="profile-view">
         <div class="form-area" style="text-align:center;">
             <div class="user-icon" id="view-icon">👤</div>
             <h2 id="view-name">ユーザー名</h2>
             <button id="btn-follow" class="action-btn" style="width: auto; padding: 8px 20px; margin-bottom: 10px;">フォローする</button>
-            <div id="view-bio" style="background:#f0f4f8; padding:15px; border-radius:10px; text-align:left; font-size:14px; margin:15px 0; min-height:50px;"></div>
+            <div id="view-bio" style="background:#f0f4f8; padding:15px; border-radius:10px; text-align:left; font-size:14px; margin:15px 0; min-height:40px;"></div>
             <div class="stats">
                 <div>👀 <b id="view-count">0</b></div>
                 <div>💰 <b id="view-score">0</b></div>
                 <div>👥 <b id="view-followers">0</b></div>
             </div>
-            <button id="btn-tip" class="action-btn" style="background:#FF9800;">1pt 送る</button>
-            <a href="#" style="display:block; margin-top:20px; color:#2196F3;" onclick="location.hash=''; location.reload();">閉じる</a>
+            <button id="btn-tip" class="action-btn" style="background:#FF9800; margin-bottom: 10px;">1pt 送る</button>
+            <a href="#" style="display:block; color:#2196F3; font-size:14px;" onclick="location.hash=''; location.reload();">閉じる / ホームへ</a>
         </div>
     </div>
 
@@ -80,7 +80,7 @@
         </div>
     </div>
 
-    <div id="app-container" class="hidden">
+    <div id="app-container">
         <header>
             <div class="hamburger-btn" onclick="toggleSidebar()">☰</div>
             <div id="page-title">ホーム</div>
@@ -97,6 +97,7 @@
             
             <div class="nav-item" onclick="showSection('home')">🏠 ホーム</div>
             <div class="nav-item" onclick="showSection('members')">👥 メンバー一覧</div>
+            <div class="nav-item" onclick="showSection('followers')">❤️ フォロワー一覧</div>
             
             <div class="input-group" style="margin-top:20px;">
                 <label>自己紹介更新</label>
@@ -107,13 +108,18 @@
         </nav>
 
         <main id="section-home" class="form-area" style="text-align:center;">
-            <h1>こんにちは！</h1>
-            <p>自分のプロフURL:<br><code id="share-url" style="background:#eee; padding:5px; font-size:12px;"></code></p>
+            <h1>おかえりなさい！</h1>
+            <p style="font-size:14px; color:#666;">あなたのプロフURL:</p>
+            <code id="share-url" style="background:#eee; padding:8px; font-size:11px; display:block; word-break:break-all;"></code>
         </main>
 
         <main id="section-members" class="hidden">
-            <h3 style="text-align:center; margin-top:20px;">メンバー一覧</h3>
             <div id="user-list-area" class="user-list"></div>
+        </main>
+
+        <main id="section-followers" class="hidden">
+            <h3 style="text-align:center;">あなたをフォロー中の人</h3>
+            <div id="follower-list-area" class="user-list"></div>
         </main>
     </div>
 
@@ -133,7 +139,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // --- UI制御 ---
+        // --- 表示切り替え ---
         window.switchTab = (t) => {
             document.getElementById('form-login').classList.toggle('hidden', t!=='login');
             document.getElementById('form-register').classList.toggle('hidden', t!=='register');
@@ -143,50 +149,60 @@
         window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('open');
         
         window.showSection = (name) => {
-            document.getElementById('section-home').classList.toggle('hidden', name !== 'home');
-            document.getElementById('section-members').classList.toggle('hidden', name !== 'members');
-            document.getElementById('page-title').innerText = name === 'home' ? 'ホーム' : 'メンバー';
-            if(name === 'members') loadUserList();
+            ['home', 'members', 'followers'].forEach(s => {
+                document.getElementById(`section-${s}`).classList.toggle('hidden', s !== name);
+            });
+            document.getElementById('page-title').innerText = name === 'home' ? 'ホーム' : (name === 'members' ? 'メンバー' : 'フォロワー');
+            if(name === 'members') loadUserList('all');
+            if(name === 'followers') loadUserList('followers');
             document.getElementById('sidebar').classList.remove('open');
         };
 
-        // --- ユーザーリスト読み込み ---
-        const loadUserList = async () => {
+        // --- ユーザーリスト表示 (全員 or フォロワー) ---
+        const loadUserList = async (mode) => {
+            const me = localStorage.getItem("loginnow");
             const snap = await get(ref(db, 'users'));
-            const area = document.getElementById('user-list-area');
+            const area = (mode === 'all') ? document.getElementById('user-list-area') : document.getElementById('follower-list-area');
             area.innerHTML = "読み込み中...";
+            
             if(snap.exists()){
                 area.innerHTML = "";
-                Object.entries(snap.val()).forEach(([name, data]) => {
+                const allUsers = snap.val();
+                let targets = Object.entries(allUsers);
+
+                if(mode === 'followers') {
+                    const myData = allUsers[me];
+                    const followerNames = myData.followers ? Object.keys(myData.followers) : [];
+                    targets = targets.filter(([name]) => followerNames.includes(name));
+                    if(targets.length === 0) return area.innerHTML = "<p style='text-align:center; grid-column:1/-1;'>まだフォロワーがいません</p>";
+                }
+
+                targets.forEach(([name, data]) => {
                     const card = document.createElement('a');
                     card.className = 'user-card';
                     card.href = "#" + encodeURIComponent(name);
-                    card.onclick = () => setTimeout(() => location.reload(), 100);
+                    card.onclick = () => setTimeout(() => location.reload(), 50);
                     card.innerHTML = `
                         <div class="user-icon small-icon">${data.icon ? `<img src="${data.icon}">` : '👤'}</div>
-                        <div style="font-weight:bold;">${name}</div>
-                        <div style="font-size:10px; color:#999;">${data.score || 0} pt</div>
+                        <div style="font-weight:bold; font-size:13px;">${name}</div>
                     `;
                     area.appendChild(card);
                 });
             }
         };
 
-        // --- アイコン・自己紹介保存 ---
+        // --- アイコン・自己紹介 ---
         window.changeIcon = () => {
             const me = localStorage.getItem("loginnow");
-            if(!me) return;
             const input = document.createElement('input');
             input.type = 'file'; input.accept = 'image/*';
             input.onchange = e => {
-                const file = e.target.files[0];
-                if (file.size > 500000) return alert("500KB以下にしてください");
                 const reader = new FileReader();
                 reader.onload = async (ev) => {
                     await update(ref(db, `users/${me}`), { icon: ev.target.result });
                     location.reload();
                 };
-                reader.readAsDataURL(file);
+                reader.readAsDataURL(e.target.files[0]);
             };
             input.click();
         };
@@ -194,39 +210,34 @@
         window.saveBio = async () => {
             const me = localStorage.getItem("loginnow");
             await update(ref(db, `users/${me}`), { bio: document.getElementById('my-bio-input').value });
-            alert("保存しました");
+            alert("更新しました");
         };
 
-        // --- 初期化ロジック ---
+        // --- メインロジック ---
         const init = async () => {
             const hash = decodeURIComponent(window.location.hash.substring(1));
             const me = localStorage.getItem("loginnow");
 
-            // プロフィール表示モード
+            // 1. プロフィール表示モード
             if (hash) {
                 const snap = await get(child(ref(db), `users/${hash}`));
                 if (snap.exists()) {
                     const d = snap.val();
-                    update(ref(db, `users/${hash}`), { views: increment(1) }); // 閲覧数+1
-                    document.getElementById('auth-container').classList.add('hidden');
-                    document.getElementById('profile-view').classList.remove('hidden');
+                    
+                    // 足あとカウント（セッション中1回のみ）
+                    if (!sessionStorage.getItem('viewed_' + hash)) {
+                        update(ref(db, `users/${hash}`), { views: increment(1) });
+                        sessionStorage.setItem('viewed_' + hash, 'true');
+                    }
+
+                    document.getElementById('profile-view').style.display = 'block';
                     document.getElementById('view-name').innerText = hash;
                     document.getElementById('view-bio').innerText = d.bio || "自己紹介はありません";
-                    document.getElementById('view-count').innerText = (d.views || 0) + 1;
+                    document.getElementById('view-count').innerText = d.views || 0;
                     document.getElementById('view-score').innerText = d.score || 0;
                     document.getElementById('view-followers').innerText = d.followers ? Object.keys(d.followers).length : 0;
                     if(d.icon) document.getElementById('view-icon').innerHTML = `<img src="${d.icon}">`;
 
-                    // チップ・フォロー処理は前回同様
-                    document.getElementById('btn-tip').onclick = async () => {
-                        if(!me) return alert("ログインが必要です");
-                        if(me === hash) return alert("自分には送れません");
-                        const mySnap = await get(ref(db, `users/${me}`));
-                        if(mySnap.val().score < 1) return alert("ポイント不足");
-                        await update(ref(db, `users/${me}`), { score: increment(-1) });
-                        await update(ref(db, `users/${hash}`), { score: increment(1) });
-                        alert("1pt送りました！"); location.reload();
-                    };
                     const btnF = document.getElementById('btn-follow');
                     if(me && me !== hash){
                         const isF = d.followers && d.followers[me];
@@ -236,35 +247,48 @@
                             await update(ref(db), paths); location.reload();
                         };
                     } else { btnF.classList.add('hidden'); }
+
+                    document.getElementById('btn-tip').onclick = async () => {
+                        if(!me) return alert("ログインが必要です");
+                        const mySnap = await get(ref(db, `users/${me}`));
+                        if(mySnap.val().score < 1) return alert("ポイント不足");
+                        await update(ref(db, `users/${me}`), { score: increment(-1) });
+                        await update(ref(db, `users/${hash}`), { score: increment(1) });
+                        location.reload();
+                    };
                     return;
                 }
             }
 
-            // ログイン済みメイン画面
+            // 2. ログイン済み
             if (me) {
                 const snap = await get(child(ref(db), `users/${me}`));
                 if (snap.exists()) {
                     const d = snap.val();
-                    document.getElementById('auth-container').classList.add('hidden');
-                    document.getElementById('app-container').classList.remove('hidden');
+                    document.getElementById('app-container').style.display = 'block';
                     document.getElementById('disp-name').innerText = me;
                     document.getElementById('disp-score').innerText = d.score || 0;
                     document.getElementById('my-bio-input').value = d.bio || "";
                     if(d.icon) document.getElementById('my-icon-display').innerHTML = `<img src="${d.icon}">`;
                     document.getElementById('share-url').innerText = window.location.origin + window.location.pathname + "#" + decodeURIComponent(me);
+                } else {
+                    localStorage.removeItem("loginnow");
+                    location.reload();
                 }
+            } else {
+                // 3. ゲスト（認証画面）
+                document.getElementById('auth-container').style.display = 'block';
             }
         };
 
-        window.onload = init;
+        init();
 
-        // ログイン・登録 (10ptボーナス削除)
+        // ログイン・登録
         document.getElementById('btn-do-register').onclick = async () => {
             const id = document.getElementById('reg-username').value.trim();
             const pw = document.getElementById('reg-password').value.trim();
             if(!id || !pw) return;
-            const d = { password:pw, score:0, startedAt:new Date().toLocaleDateString(), views:0, bio:"" }; // 0ptに変更
-            await set(ref(db, 'users/'+id), d);
+            await set(ref(db, 'users/'+id), { password:pw, score:0, startedAt:new Date().toLocaleDateString(), views:0, bio:"" });
             localStorage.setItem("loginnow", id);
             location.reload();
         };
