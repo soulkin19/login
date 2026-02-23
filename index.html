@@ -2,38 +2,157 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>RTDB Login System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ゲームアプリ - ログイン画面</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
-        .box { border: 1px solid #ccc; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
-        .hidden { display: none; }
-        .score-info { color: blue; font-weight: bold; }
+        /* --- 全体のスタイル --- */
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .hidden { display: none !important; }
+
+        /* --- 認証画面 (ログイン/登録) --- */
+        #auth-container {
+            max-width: 400px;
+            margin: 80px auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .tab-menu {
+            display: flex;
+            background: #eee;
+        }
+        .tab-menu div {
+            flex: 1;
+            text-align: center;
+            padding: 15px 0;
+            cursor: pointer;
+            font-weight: bold;
+            color: #888;
+            transition: 0.3s;
+        }
+        .tab-menu div.active {
+            background: #fff;
+            color: #4CAF50;
+            border-bottom: 3px solid #4CAF50;
+        }
+        .form-area { padding: 30px; }
+        .form-area h2 { margin-top: 0; text-align: center; color: #444; }
+        .input-group { margin-bottom: 20px; }
+        .input-group label { display: block; font-size: 12px; margin-bottom: 5px; color: #666; }
+        .input-group input {
+            width: 100%; padding: 10px; border: 1px solid #ccc;
+            border-radius: 5px; box-sizing: border-box; font-size: 16px;
+        }
+        .action-btn {
+            width: 100%; padding: 12px; background: #4CAF50; color: white;
+            border: none; border-radius: 5px; font-size: 16px; font-weight: bold;
+            cursor: pointer; transition: 0.3s;
+        }
+        .action-btn:hover { background: #45a049; }
+        .error-msg { color: #e74c3c; font-size: 13px; text-align: center; margin-top: 10px; min-height: 15px; }
+
+        /* --- ゲーム本編画面 ＆ ハンバーガーメニュー --- */
+        header {
+            background: #333; color: #fff; padding: 15px 20px;
+            display: flex; align-items: center;
+        }
+        .hamburger-btn {
+            font-size: 24px; cursor: pointer; margin-right: 15px; user-select: none;
+        }
+        
+        /* サイドバー（ハンバーガーメニューの中身） */
+        #sidebar {
+            position: fixed; top: 0; left: -300px; width: 250px; height: 100%;
+            background: #fff; box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+            transition: 0.3s ease-in-out; z-index: 1000; padding: 20px; box-sizing: border-box;
+        }
+        #sidebar.open { left: 0; }
+        #sidebar h3 { margin-top: 0; color: #4CAF50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .profile-info { margin-bottom: 15px; font-size: 14px; }
+        .profile-info span { font-weight: bold; color: #333; float: right; }
+        .close-btn {
+            text-align: right; cursor: pointer; color: #999; font-size: 20px; margin-bottom: 10px;
+        }
+        #btn-logout {
+            width: 100%; padding: 10px; background: #e74c3c; color: #fff;
+            border: none; border-radius: 5px; cursor: pointer; margin-top: 20px;
+        }
+        #btn-logout:hover { background: #c0392b; }
+
+        .game-content { padding: 40px; text-align: center; }
     </style>
 </head>
 <body>
 
-    <h2>簡易RTDBログインシステム</h2>
+    <div id="auth-container">
+        <div class="tab-menu">
+            <div id="tab-login" class="active" onclick="switchTab('login')">ログイン</div>
+            <div id="tab-register" onclick="switchTab('register')">新規登録</div>
+        </div>
 
-    <div id="auth-ui" class="box">
-        <input type="text" id="username" placeholder="ユーザーID（名前）"><br>
-        <input type="password" id="password" placeholder="パスワード"><br><br>
-        <button id="btn-register">新規登録</button>
-        <button id="btn-login">ログイン</button>
+        <div id="form-login" class="form-area">
+            <h2>おかえりなさい</h2>
+            <div class="input-group">
+                <label>ユーザー名</label>
+                <input type="text" id="login-username" placeholder="例: taro123">
+            </div>
+            <div class="input-group">
+                <label>パスワード</label>
+                <input type="password" id="login-password" placeholder="••••••••">
+            </div>
+            <button class="action-btn" id="btn-do-login">ログイン</button>
+            <div class="error-msg" id="login-error"></div>
+        </div>
+
+        <div id="form-register" class="form-area hidden">
+            <h2>アカウント作成</h2>
+            <div class="input-group">
+                <label>希望するユーザー名</label>
+                <input type="text" id="reg-username" placeholder="例: taro123">
+            </div>
+            <div class="input-group">
+                <label>パスワード</label>
+                <input type="password" id="reg-password" placeholder="••••••••">
+            </div>
+            <button class="action-btn" id="btn-do-register" style="background: #3498db;">登録してはじめる</button>
+            <div class="error-msg" id="reg-error"></div>
+        </div>
     </div>
 
-    <div id="menu-ui" class="box hidden">
-        <h3>ようこそ <span id="disp-name"></span> さん</h3>
-        <p class="score-info">現在のスコア: <span id="disp-score"></span></p>
-        <p>開始日: <span id="disp-start"></span></p>
-        <hr>
-        <button id="btn-logout">ログアウト</button>
+    <div id="app-container" class="hidden">
+        <header>
+            <div class="hamburger-btn" onclick="toggleSidebar()">☰</div>
+            <h2>My Game</h2>
+        </header>
+
+        <nav id="sidebar">
+            <div class="close-btn" onclick="toggleSidebar()">✖</div>
+            <h3>プレイヤー情報</h3>
+            <div class="profile-info">名前: <span id="disp-name"></span></div>
+            <div class="profile-info">固有ID: <span id="disp-uid" style="font-size: 12px; color: #888;"></span></div>
+            <div class="profile-info">スコア: <span id="disp-score" style="color: #e67e22; font-size: 18px;"></span></div>
+            <div class="profile-info">開始日: <span id="disp-start"></span></div>
+            <button id="btn-logout">ログアウト</button>
+        </nav>
+
+        <main class="game-content">
+            <h1>ゲームの世界へようこそ！</h1>
+            <p>左上の「☰」ボタンを押すと、あなたのステータスを確認できます。</p>
+        </main>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // Firebase設定
+        // Firebaseの設定
         const firebaseConfig = {
             apiKey: "AIzaSyCwhHspaG94goiCIjVj3h-Un5pBK3JTjMU",
             authDomain: "soulkin-aa3b7.firebaseapp.com",
@@ -48,66 +167,155 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // ログイン状態を保持する簡易変数（リロードすると消えます）
-        // ※永続化したい場合は localStorage.setItem('loginUser', ...) を使います
-        let currentUser = null;
+        // --- ユーティリティ関数 ---
 
-        // --- 1. 新規登録 ---
-        document.getElementById('btn-register').onclick = async () => {
-            const id = document.getElementById('username').value;
-            const pw = document.getElementById('password').value;
-            if(!id || !pw) return alert("入力してください");
+        // ランダムな個別ユーザーIDを生成する関数 (例: USER-a1b2c3d4)
+        const generateUniqueId = () => {
+            return 'USER-' + Math.random().toString(36).substr(2, 8).toUpperCase();
+        };
 
-            const userRef = ref(db, 'users/' + id);
+        // Cookieを取得する関数
+        const getCookie = (name) => {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        };
+
+        // Cookieを設定する関数 (有効期限: 7日間)
+        const setCookie = (name, value, days = 7) => {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = `${name}=${value};expires=${date.toUTCString()};path=/`;
+        };
+
+        // Cookieを削除する関数
+        const deleteCookie = (name) => {
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+        };
+
+        // --- UI操作関数 ---
+
+        // タブ切り替え処理（HTMLから直接呼べるようにwindowに登録）
+        window.switchTab = (tab) => {
+            document.getElementById('tab-login').classList.remove('active');
+            document.getElementById('tab-register').classList.remove('active');
+            document.getElementById('form-login').classList.add('hidden');
+            document.getElementById('form-register').classList.add('hidden');
+
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.getElementById(`form-${tab}`).classList.remove('active');
+            document.getElementById(`form-${tab}`).classList.remove('hidden');
             
-            // 既にユーザーがいるか確認
-            const snapshot = await get(userRef);
-            if (snapshot.exists()) {
-                alert("そのIDは既に使われています");
-            } else {
-                await set(userRef, {
-                    password: pw,
-                    score: 0,
-                    startedAt: new Date().toLocaleDateString()
-                });
-                alert("登録完了！ログインしてください");
+            // エラー文言をクリア
+            document.getElementById('login-error').innerText = '';
+            document.getElementById('reg-error').innerText = '';
+        };
+
+        // サイドバー開閉
+        window.toggleSidebar = () => {
+            document.getElementById('sidebar').classList.toggle('open');
+        };
+
+        // ログイン成功時にメイン画面を表示する
+        const showApp = (username, userData) => {
+            document.getElementById('auth-container').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            
+            document.getElementById('disp-name').innerText = username;
+            document.getElementById('disp-uid').innerText = userData.uniqueId;
+            document.getElementById('disp-score').innerText = userData.score;
+            document.getElementById('disp-start').innerText = userData.startedAt;
+        };
+
+
+        // --- 初期ロード処理 (Cookieチェック) ---
+        window.onload = async () => {
+            const savedUsername = getCookie("loginnow");
+            if (savedUsername) {
+                // Cookieがあれば自動ログイン処理
+                try {
+                    const snapshot = await get(child(ref(db), `users/${savedUsername}`));
+                    if (snapshot.exists()) {
+                        showApp(savedUsername, snapshot.val());
+                    } else {
+                        // データが消えていたらCookieも削除
+                        deleteCookie("loginnow");
+                    }
+                } catch (e) { console.error("データ取得エラー", e); }
             }
         };
 
-        // --- 2. ログイン（DBの中身をチェック） ---
-        document.getElementById('btn-login').onclick = async () => {
-            const id = document.getElementById('username').value;
-            const pw = document.getElementById('password').value;
+        // --- 新規登録ボタン ---
+        document.getElementById('btn-do-register').onclick = async () => {
+            const username = document.getElementById('reg-username').value.trim();
+            const password = document.getElementById('reg-password').value.trim();
+            const errorArea = document.getElementById('reg-error');
 
-            const dbRef = ref(db);
+            if (!username || !password) return errorArea.innerText = "すべて入力してください";
+
+            const userRef = ref(db, 'users/' + username);
+            
             try {
-                const snapshot = await get(child(dbRef, `users/${id}`));
+                // 既にユーザーがいるかチェック
+                const snapshot = await get(userRef);
+                if (snapshot.exists()) {
+                    errorArea.innerText = "そのユーザー名は既に使われています";
+                } else {
+                    // 個別IDを生成して保存
+                    const newUserData = {
+                        uniqueId: generateUniqueId(),
+                        password: password,
+                        score: 0,
+                        startedAt: new Date().toLocaleDateString()
+                    };
+                    
+                    await set(userRef, newUserData);
+                    
+                    // 登録成功したらCookieを発行してそのままログイン
+                    setCookie("loginnow", username);
+                    showApp(username, newUserData);
+                }
+            } catch (e) {
+                errorArea.innerText = "通信エラーが発生しました";
+                console.error(e);
+            }
+        };
+
+        // --- ログインボタン ---
+        document.getElementById('btn-do-login').onclick = async () => {
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value.trim();
+            const errorArea = document.getElementById('login-error');
+
+            if (!username || !password) return errorArea.innerText = "すべて入力してください";
+
+            try {
+                const snapshot = await get(child(ref(db), `users/${username}`));
                 if (snapshot.exists()) {
                     const userData = snapshot.val();
-                    if(userData.password === pw) {
-                        showMenu(id, userData);
+                    if(userData.password === password) {
+                        // パスワード一致！ Cookieを発行して画面を切り替え
+                        setCookie("loginnow", username);
+                        showApp(username, userData);
                     } else {
-                        alert("パスワードが違います");
+                        errorArea.innerText = "パスワードが違います";
                     }
                 } else {
-                    alert("ユーザーが見つかりません");
+                    errorArea.innerText = "ユーザーが見つかりません";
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) { 
+                errorArea.innerText = "通信エラーが発生しました";
+                console.error(e); 
+            }
         };
 
-        // UI切り替え
-        function showMenu(id, data) {
-            document.getElementById('auth-ui').classList.add('hidden');
-            document.getElementById('menu-ui').classList.remove('hidden');
-            document.getElementById('disp-name').innerText = id;
-            document.getElementById('disp-score').innerText = data.score;
-            document.getElementById('disp-start').innerText = data.startedAt;
-        }
-
-        // ログアウト
+        // --- ログアウトボタン ---
         document.getElementById('btn-logout').onclick = () => {
-            location.reload(); // 簡易的にリロードで初期化
+            deleteCookie("loginnow"); // Cookieを削除
+            location.reload(); // 画面をリロードして初期状態（ログイン画面）に戻す
         };
+
     </script>
 </body>
 </html>
