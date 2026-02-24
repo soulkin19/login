@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ユーザーポータル v7.5</title>
+    <title>ユーザーポータル v7.6</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #333; }
         #auth-container, #profile-view, #app-container { display: none; max-width: 500px; margin: 30px auto; background: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
@@ -105,6 +105,9 @@
         </main>
 
         <main id="section-members" class="hidden">
+            <div style="padding:15px;">
+                <input type="text" id="user-search" placeholder="ユーザー名を検索..." style="width:100%; padding:12px; border-radius:25px; border:1px solid #ddd; outline:none; box-sizing:border-box; font-size:16px;">
+            </div>
             <div id="user-list-area" class="user-list"></div>
         </main>
 
@@ -141,6 +144,7 @@
         const db = getDatabase(app);
 
         const me = localStorage.getItem("loginnow");
+        let allUsersData = {}; // 検索用にデータを保持
 
         const isBlacklisted = async (userId) => {
             if(!userId) return false;
@@ -155,6 +159,40 @@
             document.getElementById('sidebar').classList.remove('open');
             if(name === 'members') loadUserList();
             if(name === 'ranking') toggleRank('score');
+        };
+
+        // 検索機能付きのユーザーリスト読み込み
+        const loadUserList = async () => {
+            const snap = await get(ref(db, 'users'));
+            const blackSnap = await get(ref(db, 'blacklist'));
+            const blacklistedUsers = blackSnap.exists() ? Object.keys(blackSnap.val()) : [];
+            
+            if(snap.exists()) {
+                allUsersData = snap.val();
+                renderUserList("", blacklistedUsers); // 初期表示
+            }
+        };
+
+        const renderUserList = (keyword, blacklist) => {
+            const area = document.getElementById('user-list-area');
+            area.innerHTML = "";
+            Object.entries(allUsersData).forEach(([name, d]) => {
+                if (blacklist.includes(name)) return;
+                if (keyword && !name.toLowerCase().includes(keyword.toLowerCase())) return;
+
+                const card = document.createElement('div');
+                card.className = 'user-card';
+                card.innerHTML = `<div class="user-icon">${d.icon ? `<img src="${d.icon}">` : '👤'}</div><div style="font-size:12px; font-weight:bold;">${name}</div>`;
+                card.onclick = () => { location.hash = name; location.reload(); };
+                area.appendChild(card);
+            });
+        };
+
+        // 検索窓の入力イベント
+        document.getElementById('user-search').oninput = async (e) => {
+            const blackSnap = await get(ref(db, 'blacklist'));
+            const blacklistedUsers = blackSnap.exists() ? Object.keys(blackSnap.val()) : [];
+            renderUserList(e.target.value, blacklistedUsers);
         };
 
         window.toggleRank = async (type) => {
@@ -187,38 +225,14 @@
             }
         };
 
-        const loadUserList = async () => {
-            const snap = await get(ref(db, 'users'));
-            const blackSnap = await get(ref(db, 'blacklist'));
-            const blacklistedUsers = blackSnap.exists() ? Object.keys(blackSnap.val()) : [];
-            if(snap.exists()) {
-                const area = document.getElementById('user-list-area');
-                area.innerHTML = "";
-                Object.entries(snap.val()).forEach(([name, d]) => {
-                    if (blacklistedUsers.includes(name)) return;
-                    const card = document.createElement('div');
-                    card.className = 'user-card';
-                    card.innerHTML = `<div class="user-icon">${d.icon ? `<img src="${d.icon}">` : '👤'}</div><div style="font-size:12px;">${name}</div>`;
-                    card.onclick = () => { location.hash = name; location.reload(); };
-                    area.appendChild(card);
-                });
-            }
-        };
-
-        // 管理・バン解除機能
         const handleAdmin = async (target) => {
             const pass = prompt("管理者パスワードを入力してください");
             if (pass !== "delta437") return alert("パスワードが違います");
             const banned = await isBlacklisted(target);
             const action = banned ? "解除" : "バン";
             if (confirm(`${target} を${action}しますか？`)) {
-                if (banned) {
-                    await remove(ref(db, `blacklist/${target}`));
-                    alert("解除しました");
-                } else {
-                    await set(ref(db, `blacklist/${target}`), true);
-                    alert("バンしました");
-                }
+                if (banned) await remove(ref(db, `blacklist/${target}`));
+                else await set(ref(db, `blacklist/${target}`), true);
                 location.reload();
             }
         };
