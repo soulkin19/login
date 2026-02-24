@@ -273,10 +273,7 @@
                     document.getElementById('app-container').style.display = 'flex';
                     document.getElementById('disp-name').innerText = me;
                     document.getElementById('home-score').innerText = d.score || 0;
-                    
-                    // あなたのURLをセットする処理を追加
                     document.getElementById('share-url').innerText = `https://soulkin19.github.io/login/#${me}`;
-                    
                     if(d.icon) {
                         const img = `<img src="${d.icon}">`;
                         document.getElementById('side-icon').innerHTML = img;
@@ -288,19 +285,38 @@
         init();
 
         document.getElementById('btn-do-register').onclick = async () => {
+            // アカウント作成制限チェック
+            const lastReg = localStorage.getItem("last_reg_time");
+            const now = Date.now();
+            if (lastReg && (now - lastReg < 300000)) { // 300,000ms = 5分
+                const wait = Math.ceil((300000 - (now - lastReg)) / 60000);
+                alert(`連続で作成できません。あと約${wait}分待ってください。`);
+                return;
+            }
+
             const id = document.getElementById('reg-username').value.trim();
             const pw = document.getElementById('reg-password').value.trim();
             if(!id || !pw) return;
+
+            // ユーザー名の重複確認
+            const check = await get(child(ref(db), `users/${id}`));
+            if(check.exists()) return alert("その名前は既に使われています");
+
             await set(ref(db, 'users/'+id), { password:pw, score:0, views:0, bio:"" });
-            localStorage.setItem("loginnow", id); location.reload();
+            
+            // 作成時間を保存
+            localStorage.setItem("last_reg_time", Date.now());
+            localStorage.setItem("loginnow", id);
+            location.reload();
         };
+
         document.getElementById('btn-do-login').onclick = async () => {
             const id = document.getElementById('login-username').value.trim();
             const pw = document.getElementById('login-password').value.trim();
             const snap = await get(child(ref(db), `users/${id}`));
             if(snap.exists() && snap.val().password === pw) {
                 localStorage.setItem("loginnow", id); location.reload();
-            } else alert("間違い");
+            } else alert("パスワードが間違っています！");
         };
         document.getElementById('btn-logout').onclick = () => { localStorage.removeItem("loginnow"); location.hash=""; location.reload(); };
     </script>
