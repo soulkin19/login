@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ユーザーポータル v7.1</title>
+    <title>ユーザーポータル v7.2</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #333; }
         #auth-container, #profile-view, #app-container { display: none; max-width: 500px; margin: 30px auto; background: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
@@ -31,7 +31,8 @@
         .user-card { background: #fff; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; text-decoration: none; color: inherit; position: relative; }
         .rank-item { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
         .rank-num { font-size: 20px; font-weight: bold; margin-right: 15px; color: #FF9800; width: 30px; }
-        .banned-msg { color: #f44336; font-weight: bold; background: #ffebee; padding: 15px; border-radius: 8px; margin: 20px 0; display: none; }
+        .banned-msg { color: #f44336; font-weight: bold; background: #ffebee; padding: 15px; border-radius: 8px; margin: 20px 0; }
+        .stats { display: flex; justify-content: space-around; margin-bottom: 15px; }
     </style>
 </head>
 <body>
@@ -41,10 +42,8 @@
             <div id="view-normal-content">
                 <div class="user-icon" id="view-icon">👤<div class="online-dot"></div></div>
                 <h2 id="view-name">ユーザー名</h2>
-                <button id="btn-follow" class="action-btn" style="width: auto; padding: 8px 20px; margin-bottom: 10px;">フォローする</button>
                 <div id="view-bio" style="background:#f0f4f8; padding:15px; border-radius:10px; text-align:left; font-size:14px; margin:15px 0; min-height:40px;"></div>
-                <div class="stats" style="display: flex; justify-content: space-around; margin-bottom: 15px;">
-                    <div>👀 <b id="view-count">0</b></div>
+                <div class="stats">
                     <div>💰 <b id="view-score">0</b></div>
                     <div>👥 <b id="view-followers">0</b></div>
                 </div>
@@ -53,7 +52,7 @@
                     <button id="btn-tip" class="action-btn" style="background:#FF9800; width: auto; padding: 10px 20px;">pt 送る</button>
                 </div>
             </div>
-            <div id="view-banned-content" class="banned-msg">
+            <div id="view-banned-content" class="banned-msg" style="display:none;">
                 この人はアクセス禁止されています
             </div>
             <a href="#" style="display:block; color:#2196F3;" onclick="location.hash=''; location.reload();">閉じる</a>
@@ -93,18 +92,17 @@
             <div class="nav-item" onclick="showSection('members')">👥 ユーザー一覧</div>
             <div class="nav-item" onclick="showSection('ranking')">🏆 ランキング</div>
             <div class="nav-item" onclick="showSection('settings')">⚙️ プロフ設定</div>
-            <div class="nav-item" onclick="showSection('notifications')">🔔 通知</div>
             <button id="btn-logout" style="width:100%; padding:10px; background:#eee; border:none; border-radius:5px; margin-top:30px;">ログアウト</button>
         </nav>
 
         <main id="section-home" class="form-area" style="text-align:center;">
             <h1>おかえりなさい！</h1>
-            <div style="margin-bottom: 20px;"><button class="action-btn" onclick="window.open('https://soulkin19.github.io/soulch/', '_blank')" style="background:#673AB7;">💬 掲示板を開く</button></div>
+            <button class="action-btn" onclick="window.open('https://soulkin19.github.io/soulch/', '_blank')" style="background:#673AB7; margin-bottom:20px;">💬 掲示板を開く</button>
             <div style="background:#fff7e6; padding:20px; border-radius:10px; border:1px solid #ffe58f; margin-bottom:20px;">
                 <p style="font-size:14px; margin:0 0 10px 0;">ログインボーナス</p>
                 <button id="btn-daily" class="action-btn" style="background:#faad14; width:auto; padding:8px 30px;">5pt 貰う</button>
             </div>
-            <div class="stats"><div>所持ポイント<b id="home-score">0</b></div></div>
+            <div class="stats"><div>所持ポイント<br><b id="home-score" style="font-size:24px;">0</b></div></div>
             <p style="font-size:11px; color:#999; margin-top:20px;">あなたのURL:<br><code id="share-url"></code></p>
         </main>
 
@@ -114,7 +112,6 @@
         </main>
 
         <main id="section-ranking" class="hidden">
-            <div class="tab-menu"><div id="tab-rank-score" class="active" onclick="toggleRank('score')">ポイント</div><div id="tab-rank-follow" onclick="toggleRank('follow')">フォロワー</div></div>
             <div id="rank-list-area" style="padding:10px;"></div>
         </main>
 
@@ -124,7 +121,6 @@
             <div class="input-group"><label>自己紹介</label><textarea id="settings-bio-input" rows="4"></textarea></div>
             <button class="action-btn" onclick="saveBio()">保存</button>
         </main>
-        <main id="section-notifications" class="hidden" id="notif-list-area"></main>
     </div>
 
     <script type="module">
@@ -145,16 +141,68 @@
 
         const me = localStorage.getItem("loginnow");
 
-        // 共通ブラックリストチェック関数
+        // ブラックリスト確認
         const isBlacklisted = async (userId) => {
+            if(!userId) return false;
             const snap = await get(child(ref(db), `blacklist/${userId}`));
             return snap.exists();
         };
 
+        // セクション切り替え
+        window.showSection = (name) => {
+            ['home', 'members', 'ranking', 'settings'].forEach(s => {
+                document.getElementById(`section-${s}`).classList.toggle('hidden', s !== name);
+            });
+            document.getElementById('page-title').innerText = name === 'home' ? 'ホーム' : name === 'members' ? 'ユーザー一覧' : 'ランキング';
+            document.getElementById('sidebar').classList.remove('open');
+            if(name === 'members') loadUserList();
+            if(name === 'ranking') loadRanking();
+        };
+
+        // ユーザー一覧（ブラックリスト除外済み）
+        const loadUserList = async () => {
+            const snap = await get(ref(db, 'users'));
+            const blackSnap = await get(ref(db, 'blacklist'));
+            const blacklistedUsers = blackSnap.exists() ? Object.keys(blackSnap.val()) : [];
+            
+            if(snap.exists()) {
+                const area = document.getElementById('user-list-area');
+                area.innerHTML = "";
+                Object.entries(snap.val()).forEach(([name, d]) => {
+                    if (blacklistedUsers.includes(name)) return; // ブラックリストならスキップ
+                    const card = document.createElement('div');
+                    card.className = 'user-card';
+                    card.innerHTML = `<div class="user-icon">${d.icon ? `<img src="${d.icon}">` : '👤'}</div><div style="font-size:12px;">${name}</div>`;
+                    card.onclick = () => { location.hash = name; location.reload(); };
+                    area.appendChild(card);
+                });
+            }
+        };
+
+        // ランキング（ブラックリスト除外済み）
+        const loadRanking = async () => {
+            const snap = await get(ref(db, 'users'));
+            const blackSnap = await get(ref(db, 'blacklist'));
+            const blacklistedUsers = blackSnap.exists() ? Object.keys(blackSnap.val()) : [];
+            const area = document.getElementById('rank-list-area');
+            area.innerHTML = "";
+
+            if(snap.exists()){
+                const sorted = Object.entries(snap.val())
+                    .filter(([name]) => !blacklistedUsers.includes(name)) // 除外
+                    .sort((a, b) => (b[1].score || 0) - (a[1].score || 0))
+                    .slice(0, 10);
+
+                sorted.forEach(([name, d], i) => {
+                    area.innerHTML += `<div class="rank-item"><div class="rank-num">${i+1}</div><div class="user-icon" style="width:40px;height:40px;margin-right:10px;">${d.icon ? `<img src="${d.icon}">` : '👤'}</div><div><b>${name}</b><br><small>${d.score || 0} pt</small></div></div>`;
+                });
+            }
+        };
+
+        // 初期化
         const init = async () => {
             const hash = decodeURIComponent(window.location.hash.substring(1));
             
-            // プロフィール表示の処理
             if (hash) {
                 document.getElementById('profile-view').style.display = 'block';
                 if (await isBlacklisted(hash)) {
@@ -168,79 +216,56 @@
                         document.getElementById('view-bio').innerText = d.bio || "";
                         document.getElementById('view-score').innerText = d.score || 0;
                         document.getElementById('view-followers').innerText = d.followers ? Object.keys(d.followers).length : 0;
-                        if(d.icon) document.getElementById('view-icon').innerHTML = `<img src="${d.icon}"><div class="online-dot"></div>`;
-                        // 送金ボタンなどのロジック（省略）
+                        if(d.icon) document.getElementById('view-icon').innerHTML = `<img src="${d.icon}">`;
                     }
                 }
                 return;
             }
 
-            // ログイン状態の確認
             if (me) {
                 if (await isBlacklisted(me)) {
-                    alert("あなたのアカウントは凍結されています。");
-                    localStorage.removeItem("loginnow");
-                    location.reload();
-                    return;
+                    alert("凍結されています。"); localStorage.removeItem("loginnow"); location.reload(); return;
                 }
                 const snap = await get(child(ref(db), `users/${me}`));
                 if (snap.exists()) {
-                    const d = snap.val();
                     document.getElementById('app-container').style.display = 'flex';
                     document.getElementById('disp-name').innerText = me;
-                    document.getElementById('home-score').innerText = d.score || 0;
+                    document.getElementById('home-score').innerText = snap.val().score || 0;
                     document.getElementById('share-url').innerText = `https://soulkin19.github.io/login/#${me}`;
+                    if(snap.val().icon) document.getElementById('side-icon').innerHTML = `<img src="${snap.val().icon}">`;
                 }
             } else {
                 document.getElementById('auth-container').style.display = 'block';
             }
         };
 
-        // 新規作成
-        document.getElementById('btn-do-register').onclick = async () => {
-            const id = document.getElementById('reg-username').value.trim();
-            const pw = document.getElementById('reg-password').value.trim();
-            if(!id || !pw) return;
-
-            if (await isBlacklisted(id)) {
-                alert("このユーザー名はブラックリストに登録されているため、作成できません。");
-                return;
-            }
-
-            const lastReg = localStorage.getItem("last_reg_time");
-            if (lastReg && (Date.now() - lastReg < 300000)) {
-                alert("あと数分待ってください。"); return;
-            }
-
-            const check = await get(child(ref(db), `users/${id}`));
-            if(check.exists()) return alert("既に使われています");
-
-            await set(ref(db, 'users/'+id), { password:pw, score:0, views:0, bio:"" });
-            localStorage.setItem("last_reg_time", Date.now());
-            localStorage.setItem("loginnow", id);
-            location.reload();
-        };
-
-        // ログイン
+        // ログイン・登録
         document.getElementById('btn-do-login').onclick = async () => {
             const id = document.getElementById('login-username').value.trim();
             const pw = document.getElementById('login-password').value.trim();
-
-            if (await isBlacklisted(id)) {
-                alert("このアカウントは凍結されており、ログインできません。");
-                return;
-            }
-
+            if (await isBlacklisted(id)) return alert("凍結されています");
             const snap = await get(child(ref(db), `users/${id}`));
             if(snap.exists() && snap.val().password === pw) {
                 localStorage.setItem("loginnow", id); location.reload();
             } else alert("間違い");
         };
 
-        // その他（タブ切り替え、サイドバー、ログアウト等）
+        document.getElementById('btn-do-register').onclick = async () => {
+            const id = document.getElementById('reg-username').value.trim();
+            const pw = document.getElementById('reg-password').value.trim();
+            if (await isBlacklisted(id)) return alert("その名前は禁止されています");
+            const check = await get(child(ref(db), `users/${id}`));
+            if(check.exists()) return alert("既に存在します");
+            await set(ref(db, 'users/'+id), { password:pw, score:0, bio:"" });
+            localStorage.setItem("loginnow", id); location.reload();
+        };
+
+        // 共通UI操作
         window.switchTab = (t) => {
             document.getElementById('form-login').classList.toggle('hidden', t!=='login');
             document.getElementById('form-register').classList.toggle('hidden', t!=='register');
+            document.getElementById('tab-login').classList.toggle('active', t==='login');
+            document.getElementById('tab-register').classList.toggle('active', t==='register');
         };
         window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('open');
         document.getElementById('btn-logout').onclick = () => { localStorage.removeItem("loginnow"); location.hash=""; location.reload(); };
