@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ユーザーポータル v7.2</title>
+    <title>ユーザーポータル v7.3</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #333; }
         #auth-container, #profile-view, #app-container { display: none; max-width: 500px; margin: 30px auto; background: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
@@ -12,7 +12,7 @@
         .tab-menu { display: flex; background: #eee; }
         .tab-menu div { flex: 1; text-align: center; padding: 15px 0; cursor: pointer; font-weight: bold; color: #888; }
         .tab-menu div.active { background: #fff; color: #2196F3; border-bottom: 3px solid #2196F3; }
-        .form-area { padding: 30px; }
+        .form-area { padding: 30px; position: relative; } /* position: relativeを追加 */
         .input-group { margin-bottom: 15px; }
         .input-group label { display: block; font-size: 12px; margin-bottom: 5px; color: #666; font-weight: bold; }
         .input-group input, .input-group textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
@@ -33,13 +33,15 @@
         .rank-num { font-size: 20px; font-weight: bold; margin-right: 15px; color: #FF9800; width: 30px; }
         .banned-msg { color: #f44336; font-weight: bold; background: #ffebee; padding: 15px; border-radius: 8px; margin: 20px 0; }
         .stats { display: flex; justify-content: space-around; margin-bottom: 15px; }
+        /* 管理ボタン用スタイル */
+        #admin-link { position: absolute; top: 10px; right: 10px; color: #e74c3c; font-size: 11px; cursor: pointer; font-weight: bold; border: 1px solid #e74c3c; padding: 2px 6px; border-radius: 4px; display: none; }
     </style>
 </head>
 <body>
 
     <div id="profile-view">
         <div class="form-area" style="text-align:center;">
-            <div id="view-normal-content">
+            <div id="admin-link">管理</div> <div id="view-normal-content">
                 <div class="user-icon" id="view-icon">👤<div class="online-dot"></div></div>
                 <h2 id="view-name">ユーザー名</h2>
                 <div id="view-bio" style="background:#f0f4f8; padding:15px; border-radius:10px; text-align:left; font-size:14px; margin:15px 0; min-height:40px;"></div>
@@ -125,7 +127,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, get, child, update, increment, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, get, child, update, increment, push, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCwhHspaG94goiCIjVj3h-Un5pBK3JTjMU",
@@ -141,14 +143,12 @@
 
         const me = localStorage.getItem("loginnow");
 
-        // ブラックリスト確認
         const isBlacklisted = async (userId) => {
             if(!userId) return false;
             const snap = await get(child(ref(db), `blacklist/${userId}`));
             return snap.exists();
         };
 
-        // セクション切り替え
         window.showSection = (name) => {
             ['home', 'members', 'ranking', 'settings'].forEach(s => {
                 document.getElementById(`section-${s}`).classList.toggle('hidden', s !== name);
@@ -159,7 +159,6 @@
             if(name === 'ranking') loadRanking();
         };
 
-        // ユーザー一覧（ブラックリスト除外済み）
         const loadUserList = async () => {
             const snap = await get(ref(db, 'users'));
             const blackSnap = await get(ref(db, 'blacklist'));
@@ -169,7 +168,7 @@
                 const area = document.getElementById('user-list-area');
                 area.innerHTML = "";
                 Object.entries(snap.val()).forEach(([name, d]) => {
-                    if (blacklistedUsers.includes(name)) return; // ブラックリストならスキップ
+                    if (blacklistedUsers.includes(name)) return;
                     const card = document.createElement('div');
                     card.className = 'user-card';
                     card.innerHTML = `<div class="user-icon">${d.icon ? `<img src="${d.icon}">` : '👤'}</div><div style="font-size:12px;">${name}</div>`;
@@ -179,7 +178,6 @@
             }
         };
 
-        // ランキング（ブラックリスト除外済み）
         const loadRanking = async () => {
             const snap = await get(ref(db, 'users'));
             const blackSnap = await get(ref(db, 'blacklist'));
@@ -189,7 +187,7 @@
 
             if(snap.exists()){
                 const sorted = Object.entries(snap.val())
-                    .filter(([name]) => !blacklistedUsers.includes(name)) // 除外
+                    .filter(([name]) => !blacklistedUsers.includes(name))
                     .sort((a, b) => (b[1].score || 0) - (a[1].score || 0))
                     .slice(0, 10);
 
@@ -199,12 +197,39 @@
             }
         };
 
-        // 初期化
+        // 管理機能（バン・解除）
+        const handleAdmin = async (target) => {
+            const pass = prompt("管理者パスワードを入力してください");
+            if (pass !== "delta437") return alert("パスワードが違います");
+
+            const banned = await isBlacklisted(target);
+            const action = banned ? "制限解除" : "バン（アクセス制限）";
+            
+            if (confirm(`${target} さんを ${action} しますか？`)) {
+                if (banned) {
+                    await remove(ref(db, `blacklist/${target}`));
+                    alert("制限を解除しました。");
+                } else {
+                    await set(ref(db, `blacklist/${target}`), true);
+                    alert("ブラックリストに追加しました。");
+                }
+                location.reload();
+            }
+        };
+
         const init = async () => {
             const hash = decodeURIComponent(window.location.hash.substring(1));
             
             if (hash) {
                 document.getElementById('profile-view').style.display = 'block';
+
+                // 運営スタッフ専用管理ボタンの表示
+                if (me === "運営スタッフ") {
+                    const adminBtn = document.getElementById('admin-link');
+                    adminBtn.style.display = 'block';
+                    adminBtn.onclick = () => handleAdmin(hash);
+                }
+
                 if (await isBlacklisted(hash)) {
                     document.getElementById('view-normal-content').style.display = 'none';
                     document.getElementById('view-banned-content').style.display = 'block';
@@ -239,7 +264,6 @@
             }
         };
 
-        // ログイン・登録
         document.getElementById('btn-do-login').onclick = async () => {
             const id = document.getElementById('login-username').value.trim();
             const pw = document.getElementById('login-password').value.trim();
@@ -260,7 +284,6 @@
             localStorage.setItem("loginnow", id); location.reload();
         };
 
-        // 共通UI操作
         window.switchTab = (t) => {
             document.getElementById('form-login').classList.toggle('hidden', t!=='login');
             document.getElementById('form-register').classList.toggle('hidden', t!=='register');
