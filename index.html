@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ユーザーポータル v7.4</title>
+    <title>ユーザーポータル v7.5</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #333; }
         #auth-container, #profile-view, #app-container { display: none; max-width: 500px; margin: 30px auto; background: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
@@ -27,13 +27,12 @@
         .user-icon img { width: 100%; height: 100%; object-fit: cover; }
         .user-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; padding: 15px; }
         .user-card { background: #fff; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; }
-        /* ランキングのレイアウト修正 */
         .rank-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #eee; background: #fff; }
         .rank-num { font-size: 22px; font-weight: bold; color: #FF9800; width: 45px; text-align: center; flex-shrink: 0; }
         .rank-info { flex-grow: 1; padding-left: 10px; text-align: left; }
-        .banned-msg { color: #f44336; font-weight: bold; background: #ffebee; padding: 15px; border-radius: 8px; margin: 20px 0; }
+        .banned-msg { color: #f44336; font-weight: bold; background: #ffebee; padding: 25px 15px; border-radius: 8px; margin: 20px 0; }
         .stats { display: flex; justify-content: space-around; margin-bottom: 15px; }
-        #admin-link { position: absolute; top: 10px; right: 10px; color: #e74c3c; font-size: 11px; cursor: pointer; font-weight: bold; border: 1px solid #e74c3c; padding: 2px 6px; border-radius: 4px; display: none; }
+        #admin-link { position: absolute; top: 10px; right: 10px; color: #e74c3c; font-size: 12px; cursor: pointer; font-weight: bold; border: 1px solid #e74c3c; padding: 4px 8px; border-radius: 4px; display: none; z-index: 1001; background: white; }
     </style>
 </head>
 <body>
@@ -54,7 +53,10 @@
                     <button id="btn-tip" class="action-btn" style="background:#FF9800; width: auto; padding: 10px 20px;">pt 送る</button>
                 </div>
             </div>
-            <div id="view-banned-content" class="banned-msg" style="display:none;">この人はアクセス禁止されています</div>
+            <div id="view-banned-content" class="banned-msg" style="display:none;">
+                <div style="font-size: 1.2em; margin-bottom: 10px;" id="banned-user-name"></div>
+                この人はアクセス禁止されています
+            </div>
             <a href="#" style="display:block; color:#2196F3;" onclick="location.hash=''; location.reload();">閉じる</a>
         </div>
     </div>
@@ -124,7 +126,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, get, child, update, increment, push, serverTimestamp, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, get, child, update, increment, push, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCwhHspaG94goiCIjVj3h-Un5pBK3JTjMU",
@@ -152,14 +154,12 @@
             });
             document.getElementById('sidebar').classList.remove('open');
             if(name === 'members') loadUserList();
-            if(name === 'ranking') toggleRank('score'); // 初期はスコア
+            if(name === 'ranking') toggleRank('score');
         };
 
-        // ランキング切り替え機能の復活
         window.toggleRank = async (type) => {
             document.getElementById('tab-rank-score').classList.toggle('active', type === 'score');
             document.getElementById('tab-rank-follow').classList.toggle('active', type === 'follow');
-            
             const snap = await get(ref(db, 'users'));
             const blackSnap = await get(ref(db, 'blacklist'));
             const blacklistedUsers = blackSnap.exists() ? Object.keys(blackSnap.val()) : [];
@@ -168,7 +168,6 @@
 
             if(snap.exists()){
                 const users = Object.entries(snap.val()).filter(([name]) => !blacklistedUsers.includes(name));
-                
                 const sorted = users.sort((a, b) => {
                     if(type === 'score') return (b[1].score || 0) - (a[1].score || 0);
                     const af = a[1].followers ? Object.keys(a[1].followers).length : 0;
@@ -182,9 +181,7 @@
                         <div class="rank-item">
                             <div class="rank-num">${i+1}</div>
                             <div class="user-icon" style="width:45px;height:45px;margin:0;">${d.icon ? `<img src="${d.icon}">` : '👤'}</div>
-                            <div class="rank-info">
-                                <b>${name}</b><br><small>${val}</small>
-                            </div>
+                            <div class="rank-info"><b>${name}</b><br><small>${val}</small></div>
                         </div>`;
                 });
             }
@@ -208,13 +205,20 @@
             }
         };
 
+        // 管理・バン解除機能
         const handleAdmin = async (target) => {
-            const pass = prompt("管理者パスワードを入力");
-            if (pass !== "delta437") return alert("不正解");
+            const pass = prompt("管理者パスワードを入力してください");
+            if (pass !== "delta437") return alert("パスワードが違います");
             const banned = await isBlacklisted(target);
-            if (confirm(`${target} を${banned ? '解除' : 'バン'}しますか？`)) {
-                if (banned) await remove(ref(db, `blacklist/${target}`));
-                else await set(ref(db, `blacklist/${target}`), true);
+            const action = banned ? "解除" : "バン";
+            if (confirm(`${target} を${action}しますか？`)) {
+                if (banned) {
+                    await remove(ref(db, `blacklist/${target}`));
+                    alert("解除しました");
+                } else {
+                    await set(ref(db, `blacklist/${target}`), true);
+                    alert("バンしました");
+                }
                 location.reload();
             }
         };
@@ -228,9 +232,11 @@
                     btn.style.display = 'block';
                     btn.onclick = () => handleAdmin(hash);
                 }
-                if (await isBlacklisted(hash)) {
+                const banned = await isBlacklisted(hash);
+                if (banned) {
                     document.getElementById('view-normal-content').style.display = 'none';
                     document.getElementById('view-banned-content').style.display = 'block';
+                    document.getElementById('banned-user-name').innerText = hash;
                 } else {
                     const snap = await get(child(ref(db), `users/${hash}`));
                     if (snap.exists()) {
