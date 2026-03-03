@@ -3,98 +3,77 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ユーザーポータル v10.0</title>
+    <title>ユーザーポータル v12.0</title>
     <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #333; }
-        #auth-container, #profile-view, #app-container { display: none; max-width: 500px; margin: 30px auto; background: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; color: #333; }
+        #auth-container, #profile-view, #app-container { display: none; max-width: 500px; margin: 30px auto; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; }
         #app-container { max-width: 100%; margin: 0; border-radius: 0; min-height: 100vh; display: none; flex-direction: column; }
         .hidden { display: none !important; }
-        .tab-menu { display: flex; background: #eee; }
-        .tab-menu div { flex: 1; text-align: center; padding: 15px 0; cursor: pointer; font-weight: bold; color: #888; }
-        .tab-menu div.active { background: #fff; color: #2196F3; border-bottom: 3px solid #2196F3; }
-        .form-area { padding: 30px; position: relative; }
-        .input-group { margin-bottom: 15px; }
-        .input-group label { display: block; font-size: 12px; margin-bottom: 5px; color: #666; font-weight: bold; }
-        .input-group input, .input-group textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
-        .action-btn { width: 100%; padding: 12px; background: #2196F3; color: white; border: none; border-radius: 5px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        header { background: #2c3e50; color: #fff; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-        .hamburger-btn { font-size: 24px; cursor: pointer; }
-        #sidebar { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: #fff; box-shadow: 2px 0 10px rgba(0,0,0,0.2); transition: 0.3s ease; z-index: 1000; padding: 20px; box-sizing: border-box; overflow-y: auto; }
-        #sidebar.open { left: 0; }
-        .sidebar-close { text-align: right; font-size: 24px; cursor: pointer; color: #999; margin-bottom: 10px; }
-        .nav-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; font-weight: bold; font-size: 14px; }
-        .user-icon { width: 80px; height: 80px; border-radius: 50%; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 10px; overflow: hidden; border: 2px solid #2196F3; position: relative; }
-        .user-icon img { width: 100%; height: 100%; object-fit: cover; }
-        .user-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; padding: 15px; }
-        .user-card { background: #fff; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); cursor: pointer; }
-        .rank-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #eee; background: #fff; }
-        .rank-num { font-size: 22px; font-weight: bold; color: #FF9800; width: 45px; text-align: center; flex-shrink: 0; }
-        .rank-info { flex-grow: 1; padding-left: 10px; text-align: left; }
-        .banned-msg { color: #f44336; font-weight: bold; background: #ffebee; padding: 25px 15px; border-radius: 8px; margin: 20px 0; }
-        .stats { display: flex; justify-content: space-around; margin-bottom: 15px; }
-        #admin-link { position: absolute; top: 10px; right: 10px; color: #e74c3c; font-size: 12px; cursor: pointer; font-weight: bold; border: 1px solid #e74c3c; padding: 4px 8px; border-radius: 4px; display: none; z-index: 1001; background: white; }
-        #btn-follow { width: auto; padding: 6px 20px; border-radius: 20px; font-size: 14px; margin-bottom: 15px; display: none; transition: 0.2s; }
+        
+        /* UI切り替えのアニメーション */
+        main { animation: fadeIn 0.3s ease; padding: 20px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        .tweet-card { display: flex; padding: 15px; border-bottom: 1px solid #eee; background: #fff; cursor: pointer; transition: 0.2s; text-align: left; }
-        .tweet-card:hover { background: #f9f9f9; }
-        .tweet-card .user-icon { width: 48px; height: 48px; font-size: 24px; margin: 0; flex-shrink: 0; }
-        .tweet-content { margin-left: 12px; flex-grow: 1; font-size: 15px; line-height: 1.4; }
-        .tweet-user { font-weight: bold; font-size: 14px; }
-        .tweet-time { font-weight: normal; color: #888; font-size: 11px; margin-left: 5px; }
-        .tweet-text { margin-top: 5px; white-space: pre-wrap; word-break: break-all; }
-        .post-area { padding: 15px; border-bottom: 8px solid #eee; }
-        #post-input { width: 100%; border: none; outline: none; font-size: 18px; resize: none; margin-bottom: 10px; }
-        .tweet-actions { display: flex; gap: 20px; margin-top: 10px; color: #666; font-size: 13px; }
-        .tweet-actions span { cursor: pointer; display: flex; align-items: center; gap: 4px; }
-        .tweet-actions span:hover { color: #2196F3; }
+        .tab-menu { display: flex; background: #f8f9fa; border-bottom: 1px solid #ddd; }
+        .tab-menu div { flex: 1; text-align: center; padding: 15px 0; cursor: pointer; font-weight: bold; color: #65676b; transition: 0.2s; }
+        .tab-menu div.active { color: #1877F2; border-bottom: 3px solid #1877F2; background: #fff; }
+
+        header { background: #2c3e50; color: #fff; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; transition: background 0.3s; }
+        .hamburger-btn { font-size: 24px; cursor: pointer; padding: 5px; }
+
+        #sidebar { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: #fff; box-shadow: 5px 0 15px rgba(0,0,0,0.1); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000; padding: 20px; box-sizing: border-box; }
+        #sidebar.open { left: 0; }
+        .nav-item { padding: 12px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 5px; transition: 0.2s; }
+        .nav-item:hover { background: #f0f2f5; }
+
+        .user-icon { width: 80px; height: 80px; border-radius: 50%; background: #e4e6eb; display: flex; align-items: center; justify-content: center; font-size: 40px; margin: 0 auto 10px; overflow: hidden; border: 3px solid #1877F2; }
+        .user-icon img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* ツイート/ハイプ */
+        .tweet-card { display: flex; padding: 15px; border-bottom: 1px solid #f0f2f5; background: #fff; transition: 0.2s; }
+        .hype-card { background: #fff9c4 !important; border-left: 5px solid #fbc02d !important; }
+        .tweet-actions { display: flex; gap: 15px; margin-top: 10px; color: #65676b; font-size: 13px; }
+        .tweet-actions span { cursor: pointer; display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 4px; }
+        .tweet-actions span:hover { background: #f0f2f5; }
         .liked { color: #e0245e !important; }
-        .reposted { color: #17bf63 !important; }
-        .repost-label { font-size: 12px; color: #888; margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+
+        .action-btn { width: 100%; padding: 12px; background: #1877F2; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .tip-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
+        .tip-btns button { padding: 8px; font-size: 12px; border-radius: 4px; border: 1px solid #ddd; background: #fff; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div id="profile-view" style="max-width: 600px; overflow-y: auto; height: 100vh; position: fixed; top: 0; left: 50%; transform: translateX(-50%); z-index: 2000;">
-        <div class="form-area" style="text-align:center; padding-bottom: 0;">
-            <div id="admin-link">管理</div>
-            <div id="view-normal-content">
-                <div class="user-icon" id="view-icon">👤</div>
-                <h2 id="view-name">ユーザー名</h2>
-                <button id="btn-follow" class="action-btn"></button>
-                <div id="view-bio" style="background:#f0f4f8; padding:15px; border-radius:10px; text-align:left; font-size:14px; margin:15px 0; min-height:40px;"></div>
-                <div class="stats">
-                    <div>💰 <b id="view-score">0</b><br><small style="color:#888;">ポイント</small></div>
-                    <div>👥 <b id="view-followers">0</b><br><small style="color:#888;">フォロワー</small></div>
-                </div>
-                <div style="display: flex; justify-content: center; gap: 5px; margin-bottom: 15px;">
-                    <input type="number" id="tip-amount" placeholder="数" style="width: 70px; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
-                    <button id="btn-tip" class="action-btn" style="background:#FF9800; width: auto; padding: 10px 20px;">pt 送る</button>
+    <div id="profile-view" style="max-width: 600px; height: 100vh; position: fixed; top: 0; left: 50%; transform: translateX(-50%); z-index: 2000; background:#fff; overflow-y:auto; display:none; border-radius:0;">
+        <div style="padding: 20px; text-align: center; border-bottom: 8px solid #f0f2f5;">
+            <div id="view-icon" class="user-icon">👤</div>
+            <h2 id="view-name">---</h2>
+            <button id="btn-follow" class="action-btn" style="width:auto; padding: 8px 30px; margin-bottom: 10px;"></button>
+            <p id="view-bio" style="font-size:14px; color:#65676b;"></p>
+            <div style="display:flex; justify-content:center; gap:20px; margin: 15px 0;">
+                <div>💰 <b id="view-score">0</b><br><small>ポイント</small></div>
+                <div>👥 <b id="view-followers">0</b><br><small>フォロワー</small></div>
+            </div>
+            <div id="tip-area" style="background:#f8f9fa; padding:15px; border-radius:10px;">
+                <div style="font-size:12px; font-weight:bold;">ポイントを送る (税10%)</div>
+                <div class="tip-btns">
+                    <button onclick="sendTip(10)">10</button>
+                    <button onclick="sendTip(50)">50</button>
+                    <button onclick="sendTip(100)">100</button>
+                    <button onclick="sendTip(1000)">1000</button>
                 </div>
             </div>
-            <div id="view-banned-content" class="banned-msg" style="display:none;">
-                <div style="font-size: 1.2em; margin-bottom: 10px;" id="banned-user-name"></div>
-                この人はアクセス禁止されています
-            </div>
-            <a href="javascript:void(0)" style="display:block; color:#2196F3; margin-bottom: 20px;" onclick="closeProfile()">閉じる</a>
+            <a href="javascript:void(0)" onclick="closeProfile()" style="display:block; margin-top:15px; color:#1877F2;">戻る</a>
         </div>
-        <hr style="border:0; border-top:8px solid #eee; margin:0;">
         <div id="profile-posts-area"></div>
     </div>
 
     <div id="auth-container">
-        <div class="tab-menu">
-            <div id="tab-login" class="active" onclick="switchTab('login')">ログイン</div>
-            <div id="tab-register" onclick="switchTab('register')">新規作成</div>
-        </div>
-        <div id="form-login" class="form-area">
-            <div class="input-group"><label>ユーザー名</label><input type="text" id="login-username"></div>
-            <div class="input-group"><label>パスワード</label><input type="password" id="login-password"></div>
-            <button class="action-btn" id="btn-do-login">ログイン</button>
-        </div>
-        <div id="form-register" class="form-area hidden">
-            <div class="input-group"><label>ユーザー名</label><input type="text" id="reg-username"></div>
-            <div class="input-group"><label>パスワード</label><input type="password" id="reg-password"></div>
-            <button class="action-btn" id="btn-do-register" style="background:#34495e;">登録完了</button>
+        <div class="tab-menu"><div id="t-login" class="active" onclick="switchAuthTab('login')">ログイン</div><div id="t-reg" onclick="switchAuthTab('register')">新規登録</div></div>
+        <div id="auth-form" style="padding:30px;">
+            <input type="text" id="auth-username" placeholder="ユーザー名" style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;">
+            <input type="password" id="auth-password" placeholder="パスワード" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid #ddd; border-radius:8px;">
+            <button class="action-btn" id="btn-auth-submit">実行</button>
         </div>
     </div>
 
@@ -106,65 +85,73 @@
         </header>
 
         <nav id="sidebar">
-            <div class="sidebar-close" onclick="toggleSidebar()">×</div>
-            <div class="user-icon" id="side-icon" style="border:none;">👤</div>
+            <div class="sidebar-close" onclick="toggleSidebar()" style="text-align:right; cursor:pointer;">×</div>
+            <div class="user-icon" id="side-icon">👤</div>
             <div id="disp-name" style="text-align:center; font-weight:bold; margin-bottom:20px;"></div>
             <div class="nav-item" onclick="showSection('home')">🏠 ホーム</div>
-            <div class="nav-item" onclick="showSection('tl')">📱 TL（ツイート）</div>
-            <div class="nav-item" onclick="window.open('https://soulkin19.github.io/soulch/', '_blank')">💬 掲示板へ行く</div>
+            <div class="nav-item" onclick="showSection('tl')">📱 タイムライン</div>
             <div class="nav-item" onclick="showSection('members')">👥 ユーザー一覧</div>
             <div class="nav-item" onclick="showSection('ranking')">🏆 ランキング</div>
             <div class="nav-item" onclick="showSection('settings')">⚙️ プロフ設定</div>
-            <button id="btn-logout" style="width:100%; padding:10px; background:#eee; border:none; border-radius:5px; margin-top:30px;">ログアウト</button>
+            <button id="btn-logout" style="width:100%; margin-top:30px; padding:10px; border:none; background:#eee; border-radius:8px;">ログアウト</button>
         </nav>
 
-        <main id="section-home" class="form-area" style="text-align:center;">
-            <h1>おかえりなさい！</h1>
-            <button class="action-btn" onclick="showSection('tl')" style="background:#1DA1F2; margin-bottom:20px;">📱 タイムラインを見る</button>
-            <div class="stats"><div>所持ポイント<br><b id="home-score" style="font-size:24px;">0</b></div></div>
-            <p style="font-size:11px; color:#999; margin-top:20px;">あなたのURL:<br><code id="share-url"></code></p>
+        <main id="section-home">
+            <div style="text-align:center;">
+                <h2 id="welcome-msg">こんにちは！</h2>
+                <div style="background:#fff; padding:20px; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.05);">
+                    <div style="font-size:14px; color:#65676b;">現在の所持ポイント</div>
+                    <div style="font-size:32px; font-weight:bold; color:#1877F2;" id="home-score">0</div>
+                </div>
+                <div style="margin-top:20px; font-size:12px; color:#999;">
+                    あなたのURL:<br><code id="share-url" style="background:#eee; padding:2px 5px;"></code>
+                </div>
+            </div>
         </main>
 
         <main id="section-tl" class="hidden">
-            <div class="post-area">
-                <textarea id="post-input" placeholder="いまどうしてる？" rows="3"></textarea>
-                <div style="text-align:right;">
-                    <button class="action-btn" onclick="submitPost()" style="width:auto; padding:8px 25px; border-radius:20px; background:#1DA1F2;">ポスト</button>
-                </div>
+            <div style="background:#fff; padding:15px; border-radius:12px; margin-bottom:10px;">
+                <textarea id="post-input" placeholder="いまどうしてる？" style="width:100%; border:none; outline:none; font-size:16px; resize:none;" rows="3"></textarea>
+                <div style="text-align:right;"><button onclick="submitPost()" style="background:#1877F2; color:white; border:none; padding:8px 20px; border-radius:20px; font-weight:bold; cursor:pointer;">ポスト</button></div>
             </div>
-            <div class="tab-menu">
-                <div id="tab-tl-all" class="active" onclick="toggleTL('all')">すべて</div>
-                <div id="tab-tl-follow" onclick="toggleTL('follow')">フォロー中</div>
+            <div class="tab-menu" style="margin-bottom:10px; border-radius:12px; overflow:hidden;">
+                <div id="tl-all" class="active" onclick="setTLMode('all')">おすすめ</div>
+                <div id="tl-follow" onclick="setTLMode('follow')">フォロー中</div>
             </div>
             <div id="tl-area"></div>
         </main>
 
         <main id="section-members" class="hidden">
-            <div style="padding:15px;">
-                <input type="text" id="user-search" placeholder="ユーザー名を検索..." style="width:100%; padding:12px; border-radius:25px; border:1px solid #ddd; outline:none; box-sizing:border-box; font-size:16px;">
-            </div>
-            <div id="user-list-area" class="user-list"></div>
+            <input type="text" id="user-search" placeholder="ユーザーを検索..." style="width:100%; padding:12px; border:none; border-radius:25px; background:#e4e6eb; margin-bottom:15px; outline:none;">
+            <div id="user-list-area" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;"></div>
         </main>
 
         <main id="section-ranking" class="hidden">
-            <div class="tab-menu">
-                <div id="tab-rank-score" class="active" onclick="toggleRank('score')">ポイント</div>
-                <div id="tab-rank-follow" onclick="toggleRank('follow')">フォロワー</div>
+            <div class="tab-menu" style="border-radius:12px; overflow:hidden; margin-bottom:15px;">
+                <div id="rk-score" class="active" onclick="setRankMode('score')">ポイント</div>
+                <div id="rk-follow" onclick="setRankMode('follow')">人気</div>
             </div>
             <div id="rank-list-area"></div>
         </main>
 
-        <main id="section-settings" class="hidden form-area">
-            <h3>プロフ設定</h3>
-            <div class="user-icon" id="settings-icon-disp" onclick="changeIcon()" style="cursor:pointer;">👤</div>
-            <div class="input-group"><label>自己紹介</label><textarea id="settings-bio-input" rows="4"></textarea></div>
-            <button class="action-btn" onclick="saveBio()">保存</button>
+        <main id="section-settings" class="hidden">
+            <h3>プロフィールの編集</h3>
+            <div class="user-icon" id="settings-icon-preview">👤</div>
+            <div style="margin-bottom:15px;">
+                <label style="font-size:12px; font-weight:bold;">アイコン画像URL</label>
+                <input type="text" id="set-icon-url" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+            </div>
+            <div style="margin-bottom:15px;">
+                <label style="font-size:12px; font-weight:bold;">自己紹介</label>
+                <textarea id="set-bio" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;" rows="4"></textarea>
+            </div>
+            <button class="action-btn" onclick="saveSettings()">変更を保存</button>
         </main>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, get, child, update, increment, push, remove, serverTimestamp, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, get, child, update, increment, push, remove, serverTimestamp, query, limitToLast, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCwhHspaG94goiCIjVj3h-Un5pBK3JTjMU",
@@ -178,299 +165,278 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        const me = localStorage.getItem("loginnow");
-        let allUsersData = {};
-        let currentTLMode = "all";
-        let lastSection = "home";
+        let me = localStorage.getItem("loginnow");
+        let currentSection = "home";
+        let tlMode = "all";
+        let rankMode = "score";
+        let allUsers = {};
 
-        const isBlacklisted = async (userId) => {
-            if(!userId) return false;
-            const snap = await get(child(ref(db), `blacklist/${userId}`));
-            return snap.exists();
+        // 共通：ポイント付与関数
+        const givePoints = (userId, amount) => {
+            update(ref(db, `users/${userId}`), { score: increment(amount) });
         };
 
+        // セクション切り替え
         window.showSection = (name) => {
-            ['home', 'tl', 'members', 'ranking', 'settings'].forEach(s => {
+            const sections = ['home', 'tl', 'members', 'ranking', 'settings'];
+            sections.forEach(s => {
                 const el = document.getElementById(`section-${s}`);
-                if(el) el.classList.toggle('hidden', s !== name);
+                el.classList.toggle('hidden', s !== name);
             });
-            document.getElementById('page-title').innerText = name === 'tl' ? 'タイムライン' : name.toUpperCase();
+            currentSection = name;
+            document.getElementById('page-title').innerText = name.toUpperCase();
             document.getElementById('sidebar').classList.remove('open');
-            lastSection = name;
-            if(name === 'members') loadUserList();
-            if(name === 'ranking') toggleRank('score');
-            if(name === 'tl') toggleTL(currentTLMode);
+
+            // UI変化を分かりやすくするためにヘッダー色を変える
+            const colors = { home: "#2c3e50", tl: "#1877F2", members: "#2ecc71", ranking: "#f1c40f", settings: "#95a5a6" };
+            document.querySelector('header').style.background = colors[name] || "#2c3e50";
+
+            if(name === 'members') refreshMembers();
+            if(name === 'ranking') refreshRanking();
+            if(name === 'tl') refreshTL();
+            if(name === 'home') refreshHome();
         };
 
-        window.openProfile = (name) => {
-            window.location.hash = name;
-            renderProfile(name);
+        const refreshHome = async () => {
+            const snap = await get(ref(db, `users/${me}`));
+            if(snap.exists()) {
+                document.getElementById('home-score').innerText = snap.val().score || 0;
+            }
+        };
+
+        // タイムライン
+        window.setTLMode = (m) => { tlMode = m; document.getElementById('tl-all').classList.toggle('active', m==='all'); document.getElementById('tl-follow').classList.toggle('active', m==='follow'); refreshTL(); };
+        
+        window.submitPost = async () => {
+            const txt = document.getElementById('post-input').value.trim();
+            if(!txt) return;
+            const postData = { user: me, text: txt, timestamp: serverTimestamp(), likes: {}, hype: false };
+            await push(ref(db, 'posts'), postData);
+            document.getElementById('post-input').value = "";
+            givePoints(me, 10); // 投稿ボーナス
+            refreshTL();
+        };
+
+        window.refreshTL = async () => {
+            const snap = await get(query(ref(db, 'posts'), limitToLast(50)));
+            const area = document.getElementById('tl-area');
+            area.innerHTML = "";
+            if(snap.exists()){
+                const posts = Object.entries(snap.val()).reverse();
+                for(const [id, p] of posts) {
+                    const isLiked = p.likes && p.likes[me] ? "liked" : "";
+                    const likesCount = p.likes ? Object.keys(p.likes).length : 0;
+                    const u = allUsers[p.user] || {};
+                    const icon = u.icon ? `<img src="${u.icon}">` : '👤';
+
+                    area.innerHTML += `
+                        <div class="tweet-card ${p.hype ? 'hype-card' : ''}" onclick="openProfile('${p.user}')">
+                            <div class="user-icon" style="width:40px;height:40px; font-size:20px;">${icon}</div>
+                            <div style="margin-left:10px; flex-grow:1;">
+                                <div style="font-weight:bold; font-size:14px;">${p.user}</div>
+                                <div style="font-size:15px; margin:5px 0;">${p.text}</div>
+                                <div class="tweet-actions">
+                                    <span class="${isLiked}" onclick="event.stopPropagation(); toggleLike('${id}', '${p.user}')">❤️ ${likesCount}</span>
+                                    <span onclick="event.stopPropagation(); startHype('${id}')">🚀 ハイプ</span>
+                                </div>
+                            </div>
+                        </div>`;
+                }
+            }
+        };
+
+        window.toggleLike = async (postId, authorId) => {
+            const likeRef = ref(db, `posts/${postId}/likes/${me}`);
+            const snap = await get(likeRef);
+            if(snap.exists()) {
+                await remove(likeRef);
+            } else {
+                await set(likeRef, true);
+                if(me !== authorId) givePoints(authorId, 5); // 被いいねボーナス
+            }
+            refreshTL();
+        };
+
+        window.startHype = async (postId) => {
+            const snap = await get(ref(db, `users/${me}/score`));
+            if((snap.val() || 0) < 100) return alert("100pt必要です");
+            if(confirm("100pt使ってこの投稿をハイプしますか？")){
+                await update(ref(db, `users/${me}`), { score: increment(-100) });
+                await update(ref(db, `posts/${postId}`), { hype: true });
+                refreshTL();
+            }
+        };
+
+        // 送金システム
+        window.sendTip = async (amount) => {
+            const target = decodeURIComponent(window.location.hash.substring(1));
+            const mySnap = await get(ref(db, `users/${me}/score`));
+            if((mySnap.val() || 0) < amount) return alert("ポイントが足りません");
+            
+            const tax = Math.floor(amount * 0.1);
+            const netAmount = amount - tax;
+
+            if(confirm(`${target}に${amount}pt送りますか？(税金${tax}pt引かれます)`)){
+                await update(ref(db, `users/${me}`), { score: increment(-amount) });
+                await update(ref(db, `users/${target}`), { score: increment(netAmount) });
+                await update(ref(db, `users/運営スタッフ`), { score: increment(tax) });
+                alert("送金完了！");
+                openProfile(target);
+            }
+        };
+
+        // ランキング
+        window.setRankMode = (m) => { rankMode = m; document.getElementById('rk-score').classList.toggle('active', m==='score'); document.getElementById('rk-follow').classList.toggle('active', m==='follow'); refreshRanking(); };
+        const refreshRanking = async () => {
+            const area = document.getElementById('rank-list-area');
+            area.innerHTML = "読み込み中...";
+            const snap = await get(ref(db, 'users'));
+            if(snap.exists()){
+                area.innerHTML = "";
+                const sorted = Object.entries(snap.val()).sort((a,b) => {
+                    if(rankMode==='score') return (b[1].score||0) - (a[1].score||0);
+                    const af = a[1].followers ? Object.keys(a[1].followers).length : 0;
+                    const bf = b[1].followers ? Object.keys(b[1].followers).length : 0;
+                    return bf - af;
+                }).slice(0, 20);
+                sorted.forEach(([name, d], i) => {
+                    area.innerHTML += `
+                        <div style="display:flex; align-items:center; padding:10px; border-bottom:1px solid #eee;" onclick="openProfile('${name}')">
+                            <div style="width:30px; font-weight:bold;">${i+1}</div>
+                            <div class="user-icon" style="width:40px; height:40px; margin:0 10px; font-size:20px;">${d.icon ? `<img src="${d.icon}">` : '👤'}</div>
+                            <div style="flex-grow:1;"><b>${name}</b></div>
+                            <div style="color:#1877F2; font-weight:bold;">${rankMode==='score' ? (d.score||0)+'pt' : (d.followers ? Object.keys(d.followers).length : 0)}</div>
+                        </div>`;
+                });
+            }
+        };
+
+        // メンバー一覧
+        const refreshMembers = async () => {
+            const area = document.getElementById('user-list-area');
+            const snap = await get(ref(db, 'users'));
+            if(snap.exists()){
+                area.innerHTML = "";
+                Object.entries(snap.val()).forEach(([name, d]) => {
+                    area.innerHTML += `
+                        <div style="text-align:center; background:#fff; padding:15px; border-radius:12px; cursor:pointer;" onclick="openProfile('${name}')">
+                            <div class="user-icon" style="width:50px; height:50px; font-size:25px;">${d.icon ? `<img src="${d.icon}">` : '👤'}</div>
+                            <div style="font-size:12px; font-weight:bold;">${name}</div>
+                        </div>`;
+                });
+            }
+        };
+
+        // 設定保存
+        window.saveSettings = async () => {
+            const bio = document.getElementById('set-bio').value;
+            const icon = document.getElementById('set-icon-url').value;
+            await update(ref(db, `users/${me}`), { bio, icon });
+            alert("保存しました");
+            location.reload();
+        };
+
+        // プロフィール表示
+        window.openProfile = async (target) => {
+            window.location.hash = target;
+            document.getElementById('app-container').style.display = 'none';
+            document.getElementById('profile-view').style.display = 'block';
+            const snap = await get(ref(db, `users/${target}`));
+            if(snap.exists()){
+                const d = snap.val();
+                document.getElementById('view-name').innerText = target;
+                document.getElementById('view-bio').innerText = d.bio || "自己紹介はありません";
+                document.getElementById('view-score').innerText = d.score || 0;
+                document.getElementById('view-followers').innerText = d.followers ? Object.keys(d.followers).length : 0;
+                document.getElementById('view-icon').innerHTML = d.icon ? `<img src="${d.icon}">` : '👤';
+                
+                const fBtn = document.getElementById('btn-follow');
+                if(me === target) { fBtn.style.display = 'none'; document.getElementById('tip-area').style.display='none'; }
+                else {
+                    fBtn.style.display = 'inline-block';
+                    document.getElementById('tip-area').style.display='block';
+                    const isF = d.followers && d.followers[me];
+                    fBtn.innerText = isF ? "フォロー解除" : "フォローする";
+                    fBtn.style.background = isF ? "#eee" : "#1877F2";
+                    fBtn.style.color = isF ? "#333" : "#fff";
+                    fBtn.onclick = () => toggleFollow(target, isF);
+                }
+            }
+        };
+
+        const toggleFollow = async (target, isFollowing) => {
+            const myFRef = ref(db, `users/${me}/following/${target}`);
+            const tgFRef = ref(db, `users/${target}/followers/${me}`);
+            if(isFollowing) { await remove(myFRef); await remove(tgFRef); }
+            else { await set(myFRef, true); await set(tgFRef, true); }
+            openProfile(target);
         };
 
         window.closeProfile = () => {
             window.location.hash = "";
             document.getElementById('profile-view').style.display = 'none';
             document.getElementById('app-container').style.display = 'flex';
-            showSection(lastSection);
+            showSection(currentSection);
         };
 
-        // ポスト投稿
-        window.submitPost = async () => {
-            const txt = document.getElementById('post-input').value.trim();
-            if(!txt) return;
-            if(await isBlacklisted(me)) return alert("凍結されています");
-            const postData = { user: me, text: txt, timestamp: serverTimestamp(), likes: {}, reposts: {} };
-            await push(ref(db, 'posts'), postData);
-            document.getElementById('post-input').value = "";
-            toggleTL(currentTLMode);
+        // 認証関連
+        let authMode = "login";
+        window.switchAuthTab = (m) => {
+            authMode = m;
+            document.getElementById('t-login').className = m === 'login' ? 'active' : '';
+            document.getElementById('t-reg').className = m === 'register' ? 'active' : '';
         };
 
-        // いいね
-        window.likePost = async (postId) => {
-            if(!me) return;
-            const likeRef = ref(db, `posts/${postId}/likes/${me}`);
-            const snap = await get(likeRef);
-            if(snap.exists()) await remove(likeRef);
-            else await set(likeRef, true);
-            updateView();
-        };
+        document.getElementById('btn-auth-submit').onclick = async () => {
+            const user = document.getElementById('auth-username').value.trim();
+            const pass = document.getElementById('auth-password').value.trim();
+            if(!user || !pass) return alert("入力してください");
 
-        // リポスト
-        window.repostPost = async (postId) => {
-            if(!me) return;
-            const repostRef = ref(db, `posts/${postId}/reposts/${me}`);
-            const snap = await get(repostRef);
-            if(snap.exists()) await remove(repostRef);
-            else await set(repostRef, true);
-            updateView();
-        };
-
-        const updateView = () => {
-            if(document.getElementById('profile-view').style.display === 'block') {
-                renderProfile(decodeURIComponent(window.location.hash.substring(1)));
+            if(authMode === "register"){
+                const snap = await get(ref(db, `users/${user}`));
+                if(snap.exists()) return alert("既に存在します");
+                await set(ref(db, `users/${user}`), { password: pass, score: 500, bio: "", icon: "" }); // 初期 500pt
+                alert("登録完了！");
             }
-            toggleTL(currentTLMode);
-        };
-
-        window.replyTo = (user) => {
-            showSection('tl');
-            document.getElementById('post-input').value = `@${user} `;
-            document.getElementById('post-input').focus();
-        };
-
-        // タイムライン描画コア
-        const renderTweetHTML = (postId, p, isRepostedBy = null) => {
-            const time = p.timestamp ? new Date(p.timestamp).toLocaleString([], {month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'}) : "";
-            const likesCount = p.likes ? Object.keys(p.likes).length : 0;
-            const repostsCount = p.reposts ? Object.keys(p.reposts).length : 0;
-            const isLiked = p.likes && p.likes[me] ? "liked" : "";
-            const isReposted = p.reposts && p.reposts[me] ? "reposted" : "";
-            const userIcon = (allUsersData[p.user] && allUsersData[p.user].icon) ? `<img src="${allUsersData[p.user].icon}">` : '👤';
-
-            return `
-                <div class="tweet-card">
-                    <div class="tweet-content">
-                        ${isRepostedBy ? `<div class="repost-label">🔄 ${isRepostedBy} がリポスト</div>` : ''}
-                        <div style="display:flex;">
-                            <div class="user-icon" onclick="event.stopPropagation(); openProfile('${p.user}')">${userIcon}</div>
-                            <div style="margin-left:12px; flex-grow:1;" onclick="openProfile('${p.user}')">
-                                <div class="tweet-user">${p.user} <span class="tweet-time">${time}</span></div>
-                                <div class="tweet-text">${p.text}</div>
-                                <div class="tweet-actions">
-                                    <span onclick="event.stopPropagation(); replyTo('${p.user}')">💬</span>
-                                    <span class="${isReposted}" onclick="event.stopPropagation(); repostPost('${postId}')">🔄 ${repostsCount || ""}</span>
-                                    <span class="${isLiked}" onclick="event.stopPropagation(); likePost('${postId}')">❤️ ${likesCount || ""}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-        };
-
-        window.toggleTL = async (mode) => {
-            currentTLMode = mode;
-            document.getElementById('tab-tl-all').classList.toggle('active', mode === 'all');
-            document.getElementById('tab-tl-follow').classList.toggle('active', mode === 'follow');
             
-            const postsSnap = await get(query(ref(db, 'posts'), limitToLast(100)));
-            const blackSnap = await get(ref(db, 'blacklist'));
-            const blacklisted = blackSnap.exists() ? Object.keys(blackSnap.val()) : [];
-            let following = [];
-            if(mode === 'follow') {
-                const followSnap = await get(ref(db, `users/${me}/following`));
-                following = followSnap.exists() ? Object.keys(followSnap.val()) : [];
-            }
-
-            const area = document.getElementById('tl-area');
-            area.innerHTML = "";
-            if(postsSnap.exists()) {
-                const allPosts = postsSnap.val();
-                const displayList = [];
-
-                Object.entries(allPosts).forEach(([postId, p]) => {
-                    if(blacklisted.includes(p.user)) return;
-                    // 通常投稿
-                    if(mode === 'all' || (mode === 'follow' && (following.includes(p.user) || p.user === me))) {
-                        displayList.push({ id: postId, data: p, sortTime: p.timestamp, by: null });
-                    }
-                    // リポスト投稿の抽出
-                    if(p.reposts) {
-                        Object.keys(p.reposts).forEach(reposter => {
-                            if(blacklisted.includes(reposter)) return;
-                            if(mode === 'all' || (mode === 'follow' && following.includes(reposter))) {
-                                displayList.push({ id: postId, data: p, sortTime: p.timestamp, by: reposter }); // 本来はリポストした時間でソートすべきだが簡易化
-                            }
-                        });
-                    }
-                });
-
-                displayList.sort((a, b) => b.sortTime - a.sortTime).slice(0, 100).forEach(item => {
-                    area.innerHTML += renderTweetHTML(item.id, item.data, item.by);
-                });
+            const snap = await get(ref(db, `users/${user}`));
+            if(snap.exists() && snap.val().password === pass){
+                localStorage.setItem("loginnow", user);
+                location.reload();
+            } else {
+                alert("認証失敗");
             }
         };
 
-        const renderProfile = async (target) => {
-            document.getElementById('app-container').style.display = 'none';
-            document.getElementById('profile-view').style.display = 'block';
-            
-            const snap = await get(child(ref(db), `users/${target}`));
-            const blacklisted = await isBlacklisted(target);
-
-            if (blacklisted) {
-                document.getElementById('view-normal-content').style.display = 'none';
-                document.getElementById('view-banned-content').style.display = 'block';
-                document.getElementById('banned-user-name').innerText = target;
-                document.getElementById('profile-posts-area').innerHTML = "";
-                return;
-            }
-
-            if (snap.exists()) {
-                const d = snap.val();
-                document.getElementById('view-normal-content').style.display = 'block';
-                document.getElementById('view-banned-content').style.display = 'none';
-                document.getElementById('view-name').innerText = target;
-                document.getElementById('view-bio').innerText = d.bio || "";
-                document.getElementById('view-score').innerText = d.score || 0;
-                document.getElementById('view-followers').innerText = d.followers ? Object.keys(d.followers).length : 0;
-                document.getElementById('view-icon').innerHTML = d.icon ? `<img src="${d.icon}">` : '👤';
-                
-                // フォローボタン
-                const fBtn = document.getElementById('btn-follow');
-                if(me && me !== target) {
-                    fBtn.style.display = 'inline-block';
-                    const fs = await get(ref(db, `users/${me}/following/${target}`));
-                    fBtn.innerText = fs.exists() ? "フォロー解除" : "フォローする";
-                    fBtn.style.background = fs.exists() ? "#eee" : "#1DA1F2";
-                    fBtn.onclick = () => handleFollow(target);
-                } else { fBtn.style.display = 'none'; }
-
-                // プロフィール内投稿一覧
-                const postsSnap = await get(query(ref(db, 'posts'), limitToLast(200)));
-                const pArea = document.getElementById('profile-posts-area');
-                pArea.innerHTML = "";
-                if(postsSnap.exists()){
-                    const posts = postsSnap.val();
-                    const myList = [];
-                    Object.entries(posts).forEach(([id, p]) => {
-                        if(p.user === target) myList.push({ id, data: p, sortTime: p.timestamp, by: null });
-                        if(p.reposts && p.reposts[target]) myList.push({ id, data: p, sortTime: p.timestamp, by: target });
-                    });
-                    myList.sort((a,b) => b.sortTime - a.sortTime).forEach(item => {
-                        pArea.innerHTML += renderTweetHTML(item.id, item.data, item.by);
-                    });
-                }
-            }
-        };
-
-        const handleFollow = async (target) => {
-            const myF = ref(db, `users/${me}/following/${target}`);
-            const tgF = ref(db, `users/${target}/followers/${me}`);
-            const snap = await get(myF);
-            if(snap.exists()) { await remove(myF); await remove(tgF); }
-            else { await set(myF, true); await set(tgF, true); }
-            renderProfile(target);
-        };
-
-        const loadUserList = async () => {
-            const snap = await get(ref(db, 'users'));
-            if(snap.exists()) {
-                allUsersData = snap.val();
-                renderUserList(document.getElementById('user-search').value, []);
-            }
-        };
-
-        const renderUserList = (keyword, blacklist) => {
-            const area = document.getElementById('user-list-area');
-            area.innerHTML = "";
-            Object.entries(allUsersData).forEach(([name, d]) => {
-                if (keyword && !name.toLowerCase().includes(keyword.toLowerCase())) return;
-                const card = document.createElement('div');
-                card.className = 'user-card';
-                card.innerHTML = `<div class="user-icon">${d.icon ? `<img src="${d.icon}">` : '👤'}</div><div style="font-size:12px; font-weight:bold;">${name}</div>`;
-                card.onclick = () => openProfile(name);
-                area.appendChild(card);
-            });
-        };
-
-        window.toggleRank = async (type) => {
-            const snap = await get(ref(db, 'users'));
-            const area = document.getElementById('rank-list-area');
-            area.innerHTML = "";
-            if(snap.exists()){
-                const sorted = Object.entries(snap.val()).sort((a, b) => {
-                    if(type === 'score') return (b[1].score || 0) - (a[1].score || 0);
-                    const af = a[1].followers ? Object.keys(a[1].followers).length : 0;
-                    const bf = b[1].followers ? Object.keys(b[1].followers).length : 0;
-                    return bf - af;
-                }).slice(0, 10);
-                sorted.forEach(([name, d], i) => {
-                    const val = type === 'score' ? (d.score || 0) + " pt" : (d.followers ? Object.keys(d.followers).length : 0) + " followers";
-                    area.innerHTML += `<div class="rank-item" onclick="openProfile('${name}')"><div class="rank-num">${i+1}</div><div class="user-icon" style="width:45px;height:45px;margin:0;">${d.icon ? `<img src="${d.icon}">` : '👤'}</div><div class="rank-info"><b>${name}</b><br><small>${val}</small></div></div>`;
-                });
-            }
-        };
-
+        // 初期化
         const init = async () => {
-            const snap = await get(ref(db, 'users'));
-            if(snap.exists()) allUsersData = snap.val();
+            const snapUsers = await get(ref(db, 'users'));
+            if(snapUsers.exists()) allUsers = snapUsers.val();
 
-            const hash = decodeURIComponent(window.location.hash.substring(1));
-            if (hash) { renderProfile(hash); return; }
-            if (me) {
+            if(me) {
+                document.getElementById('auth-container').style.display = 'none';
                 document.getElementById('app-container').style.display = 'flex';
                 document.getElementById('disp-name').innerText = me;
-                const mySnap = await get(child(ref(db), `users/${me}`));
-                if(mySnap.exists()){
-                    document.getElementById('home-score').innerText = mySnap.val().score || 0;
-                    if(mySnap.val().icon) document.getElementById('side-icon').innerHTML = `<img src="${mySnap.val().icon}">`;
-                }
-                showSection('home');
-            } else { document.getElementById('auth-container').style.display = 'block'; }
+                document.getElementById('welcome-msg').innerText = `こんにちは、${me}さん！`;
+                document.getElementById('share-url').innerText = `${location.origin}${location.pathname}#${me}`;
+                
+                // 設定画面の初期値
+                const myD = allUsers[me] || {};
+                document.getElementById('set-bio').value = myD.bio || "";
+                document.getElementById('set-icon-url').value = myD.icon || "";
+                if(myD.icon) document.getElementById('side-icon').innerHTML = `<img src="${myD.icon}">`;
+
+                // 起動時ボーナス (簡易的なデイリーは今回は省略し毎回付与)
+                givePoints(me, 50);
+
+                const hash = decodeURIComponent(location.hash.substring(1));
+                if(hash) openProfile(hash);
+                else showSection('home');
+            } else {
+                document.getElementById('auth-container').style.display = 'block';
+            }
         };
 
-        document.getElementById('btn-do-login').onclick = async () => {
-            const id = document.getElementById('login-username').value.trim();
-            const pw = document.getElementById('login-password').value.trim();
-            const snap = await get(child(ref(db), `users/${id}`));
-            if(snap.exists() && snap.val().password === pw) {
-                localStorage.setItem("loginnow", id); location.reload();
-            } else alert("間違い");
-        };
-
-        document.getElementById('btn-do-register').onclick = async () => {
-            const id = document.getElementById('reg-username').value.trim();
-            const pw = document.getElementById('reg-password').value.trim();
-            const check = await get(child(ref(db), `users/${id}`));
-            if(check.exists()) return alert("存在します");
-            await set(ref(db, 'users/'+id), { password:pw, score:0, bio:"" });
-            localStorage.setItem("loginnow", id); location.reload();
-        };
-
-        window.switchTab = (t) => {
-            document.getElementById('form-login').classList.toggle('hidden', t!=='login');
-            document.getElementById('form-register').classList.toggle('hidden', t!=='register');
-        };
         window.toggleSidebar = () => document.getElementById('sidebar').classList.toggle('open');
         document.getElementById('btn-logout').onclick = () => { localStorage.removeItem("loginnow"); location.hash=""; location.reload(); };
 
