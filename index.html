@@ -40,6 +40,10 @@
         .action-btn { width: 100%; padding: 12px; background: #1877F2; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
         .tip-btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 10px; }
         .tip-btns button { padding: 8px; font-size: 12px; border-radius: 4px; border: 1px solid #ddd; background: #fff; cursor: pointer; }
+        
+        /* リンク用カラー */
+        .tweet-card a { color: #1877F2; text-decoration: none; }
+        .tweet-card a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -171,6 +175,12 @@
         let rankMode = "score";
         let allUsers = {};
 
+        // 共通：URLをリンクにする関数
+        const linkify = (text) => {
+            const urlPattern = /(https?:\/\/[^\s]+)/g;
+            return text.replace(urlPattern, '<a href="$1" target="_blank">$1</a>');
+        };
+
         // 共通：ポイント付与関数
         const givePoints = (userId, amount) => {
             update(ref(db, `users/${userId}`), { score: increment(amount) });
@@ -187,7 +197,6 @@
             document.getElementById('page-title').innerText = name.toUpperCase();
             document.getElementById('sidebar').classList.remove('open');
 
-            // UI変化を分かりやすくするためにヘッダー色を変える
             const colors = { home: "#2c3e50", tl: "#1877F2", members: "#2ecc71", ranking: "#f1c40f", settings: "#95a5a6" };
             document.querySelector('header').style.background = colors[name] || "#2c3e50";
 
@@ -234,7 +243,7 @@
                             <div class="user-icon" style="width:40px;height:40px; font-size:20px;">${icon}</div>
                             <div style="margin-left:10px; flex-grow:1;">
                                 <div style="font-weight:bold; font-size:14px;">${p.user}</div>
-                                <div style="font-size:15px; margin:5px 0;">${p.text}</div>
+                                <div style="font-size:15px; margin:5px 0;">${linkify(p.text)}</div>
                                 <div class="tweet-actions">
                                     <span class="${isLiked}" onclick="event.stopPropagation(); toggleLike('${id}', '${p.user}')">❤️ ${likesCount}</span>
                                     <span onclick="event.stopPropagation(); startHype('${id}')">🚀 ハイプ</span>
@@ -336,11 +345,16 @@
             location.reload();
         };
 
-        // プロフィール表示
+        // プロフィール表示（修正：その人の投稿を表示するように追加）
         window.openProfile = async (target) => {
             window.location.hash = target;
             document.getElementById('app-container').style.display = 'none';
             document.getElementById('profile-view').style.display = 'block';
+            
+            // 投稿エリアを初期化
+            const postArea = document.getElementById('profile-posts-area');
+            postArea.innerHTML = "<p style='text-align:center; padding:20px; color:#999;'>読み込み中...</p>";
+
             const snap = await get(ref(db, `users/${target}`));
             if(snap.exists()){
                 const d = snap.val();
@@ -360,6 +374,29 @@
                     fBtn.style.background = isF ? "#eee" : "#1877F2";
                     fBtn.style.color = isF ? "#333" : "#fff";
                     fBtn.onclick = () => toggleFollow(target, isF);
+                }
+
+                // そのユーザーの投稿を取得
+                const postsSnap = await get(query(ref(db, 'posts'), limitToLast(100)));
+                if(postsSnap.exists()){
+                    postArea.innerHTML = "";
+                    const userPosts = Object.entries(postsSnap.val())
+                        .filter(([id, p]) => p.user === target)
+                        .reverse();
+                    
+                    if(userPosts.length === 0) {
+                        postArea.innerHTML = "<p style='text-align:center; padding:20px; color:#999;'>まだポストがありません</p>";
+                    } else {
+                        userPosts.forEach(([id, p]) => {
+                            postArea.innerHTML += `
+                                <div class="tweet-card">
+                                    <div style="flex-grow:1;">
+                                        <div style="font-weight:bold; font-size:14px;">${p.user}</div>
+                                        <div style="font-size:15px; margin:5px 0;">${linkify(p.text)}</div>
+                                    </div>
+                                </div>`;
+                        });
+                    }
                 }
             }
         };
@@ -395,7 +432,7 @@
             if(authMode === "register"){
                 const snap = await get(ref(db, `users/${user}`));
                 if(snap.exists()) return alert("既に存在します");
-                await set(ref(db, `users/${user}`), { password: pass, score: 500, bio: "", icon: "" }); // 初期 500pt
+                await set(ref(db, `users/${user}`), { password: pass, score: 500, bio: "", icon: "" }); 
                 alert("登録完了！");
             }
             
@@ -420,13 +457,11 @@
                 document.getElementById('welcome-msg').innerText = `こんにちは、${me}さん！`;
                 document.getElementById('share-url').innerText = `${location.origin}${location.pathname}#${me}`;
                 
-                // 設定画面の初期値
                 const myD = allUsers[me] || {};
                 document.getElementById('set-bio').value = myD.bio || "";
                 document.getElementById('set-icon-url').value = myD.icon || "";
                 if(myD.icon) document.getElementById('side-icon').innerHTML = `<img src="${myD.icon}">`;
 
-                // 起動時ボーナス (簡易的なデイリーは今回は省略し毎回付与)
                 givePoints(me, 50);
 
                 const hash = decodeURIComponent(location.hash.substring(1));
