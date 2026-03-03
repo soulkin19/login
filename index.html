@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ユーザーポータル v8.0</title>
+    <title>ユーザーポータル v8.5</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #333; }
         #auth-container, #profile-view, #app-container { display: none; max-width: 500px; margin: 30px auto; background: #fff; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
@@ -33,8 +33,17 @@
         .banned-msg { color: #f44336; font-weight: bold; background: #ffebee; padding: 25px 15px; border-radius: 8px; margin: 20px 0; }
         .stats { display: flex; justify-content: space-around; margin-bottom: 15px; }
         #admin-link { position: absolute; top: 10px; right: 10px; color: #e74c3c; font-size: 12px; cursor: pointer; font-weight: bold; border: 1px solid #e74c3c; padding: 4px 8px; border-radius: 4px; display: none; z-index: 1001; background: white; }
-        /* フォローボタンのスタイル */
         #btn-follow { width: auto; padding: 6px 20px; border-radius: 20px; font-size: 14px; margin-bottom: 15px; display: none; transition: 0.2s; }
+
+        /* TL（タイムライン）用スタイル */
+        .tweet-card { display: flex; padding: 15px; border-bottom: 1px solid #eee; background: #fff; }
+        .tweet-card .user-icon { width: 48px; height: 48px; font-size: 24px; margin: 0; flex-shrink: 0; }
+        .tweet-content { margin-left: 12px; flex-grow: 1; font-size: 15px; line-height: 1.4; }
+        .tweet-user { font-weight: bold; font-size: 14px; }
+        .tweet-time { font-weight: normal; color: #888; font-size: 12px; margin-left: 5px; }
+        .tweet-text { margin-top: 5px; white-space: pre-wrap; word-break: break-all; }
+        .post-area { padding: 15px; border-bottom: 8px solid #eee; }
+        #post-input { width: 100%; border: none; outline: none; font-size: 18px; resize: none; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -45,9 +54,7 @@
             <div id="view-normal-content">
                 <div class="user-icon" id="view-icon">👤</div>
                 <h2 id="view-name">ユーザー名</h2>
-                
                 <button id="btn-follow" class="action-btn"></button>
-
                 <div id="view-bio" style="background:#f0f4f8; padding:15px; border-radius:10px; text-align:left; font-size:14px; margin:15px 0; min-height:40px;"></div>
                 <div class="stats">
                     <div>💰 <b id="view-score">0</b><br><small style="color:#888;">ポイント</small></div>
@@ -95,6 +102,7 @@
             <div class="user-icon" id="side-icon" style="border:none;">👤</div>
             <div id="disp-name" style="text-align:center; font-weight:bold; margin-bottom:20px;"></div>
             <div class="nav-item" onclick="showSection('home')">🏠 ホーム</div>
+            <div class="nav-item" onclick="showSection('tl')">📱 TL（ツイート）</div>
             <div class="nav-item" onclick="window.open('https://soulkin19.github.io/soulch/', '_blank')">💬 掲示板へ行く</div>
             <div class="nav-item" onclick="showSection('members')">👥 ユーザー一覧</div>
             <div class="nav-item" onclick="showSection('ranking')">🏆 ランキング</div>
@@ -104,9 +112,23 @@
 
         <main id="section-home" class="form-area" style="text-align:center;">
             <h1>おかえりなさい！</h1>
-            <button class="action-btn" onclick="window.open('https://soulkin19.github.io/soulch/', '_blank')" style="background:#673AB7; margin-bottom:20px;">💬 掲示板を開く</button>
+            <button class="action-btn" onclick="showSection('tl')" style="background:#1DA1F2; margin-bottom:20px;">📱 タイムラインを見る</button>
             <div class="stats"><div>所持ポイント<br><b id="home-score" style="font-size:24px;">0</b></div></div>
             <p style="font-size:11px; color:#999; margin-top:20px;">あなたのURL:<br><code id="share-url"></code></p>
+        </main>
+
+        <main id="section-tl" class="hidden">
+            <div class="post-area">
+                <textarea id="post-input" placeholder="いまどうしてる？" rows="3"></textarea>
+                <div style="text-align:right;">
+                    <button class="action-btn" onclick="submitPost()" style="width:auto; padding:8px 25px; border-radius:20px; background:#1DA1F2;">ポスト</button>
+                </div>
+            </div>
+            <div class="tab-menu">
+                <div id="tab-tl-all" class="active" onclick="toggleTL('all')">すべて</div>
+                <div id="tab-tl-follow" onclick="toggleTL('follow')">フォロー中</div>
+            </div>
+            <div id="tl-area"></div>
         </main>
 
         <main id="section-members" class="hidden">
@@ -134,7 +156,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, get, child, update, increment, push, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, set, get, child, update, increment, push, remove, serverTimestamp, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCwhHspaG94goiCIjVj3h-Un5pBK3JTjMU",
@@ -150,6 +172,7 @@
 
         const me = localStorage.getItem("loginnow");
         let allUsersData = {};
+        let currentTLMode = "all";
 
         const isBlacklisted = async (userId) => {
             if(!userId) return false;
@@ -158,22 +181,79 @@
         };
 
         window.showSection = (name) => {
-            ['home', 'members', 'ranking', 'settings'].forEach(s => {
-                document.getElementById(`section-${s}`).classList.toggle('hidden', s !== name);
+            ['home', 'tl', 'members', 'ranking', 'settings'].forEach(s => {
+                const el = document.getElementById(`section-${s}`);
+                if(el) el.classList.toggle('hidden', s !== name);
             });
+            document.getElementById('page-title').innerText = name === 'tl' ? 'タイムライン' : name.toUpperCase();
             document.getElementById('sidebar').classList.remove('open');
             if(name === 'members') loadUserList();
             if(name === 'ranking') toggleRank('score');
+            if(name === 'tl') toggleTL('all');
         };
 
-        // フォロー・解除処理
+        // --- タイムライン機能 ---
+        window.submitPost = async () => {
+            const txt = document.getElementById('post-input').value.trim();
+            if(!txt) return;
+            if(await isBlacklisted(me)) return alert("投稿できません");
+            
+            const postData = {
+                user: me,
+                text: txt,
+                timestamp: serverTimestamp()
+            };
+            await push(ref(db, 'posts'), postData);
+            document.getElementById('post-input').value = "";
+            toggleTL(currentTLMode);
+        };
+
+        window.toggleTL = async (mode) => {
+            currentTLMode = mode;
+            document.getElementById('tab-tl-all').classList.toggle('active', mode === 'all');
+            document.getElementById('tab-tl-follow').classList.toggle('active', mode === 'follow');
+            
+            const postsSnap = await get(query(ref(db, 'posts'), limitToLast(50)));
+            const blackSnap = await get(ref(db, 'blacklist'));
+            const blacklisted = blackSnap.exists() ? Object.keys(blackSnap.val()) : [];
+            
+            let following = [];
+            if(mode === 'follow') {
+                const followSnap = await get(ref(db, `users/${me}/following`));
+                following = followSnap.exists() ? Object.keys(followSnap.val()) : [];
+            }
+
+            const area = document.getElementById('tl-area');
+            area.innerHTML = "";
+
+            if(postsSnap.exists()) {
+                const posts = Object.values(postsSnap.val()).reverse();
+                for(const p of posts) {
+                    if(blacklisted.includes(p.user)) continue;
+                    if(mode === 'follow' && !following.includes(p.user) && p.user !== me) continue;
+
+                    const userSnap = await get(ref(db, `users/${p.user}`));
+                    const icon = (userSnap.exists() && userSnap.val().icon) ? `<img src="${userSnap.val().icon}">` : '👤';
+                    const time = p.timestamp ? new Date(p.timestamp).toLocaleString() : "";
+
+                    area.innerHTML += `
+                        <div class="tweet-card" onclick="location.hash='${p.user}'; location.reload();">
+                            <div class="user-icon">${icon}</div>
+                            <div class="tweet-content">
+                                <div class="tweet-user">${p.user} <span class="tweet-time">${time}</span></div>
+                                <div class="tweet-text">${p.text}</div>
+                            </div>
+                        </div>`;
+                }
+            }
+        };
+
+        // --- フォロー・解除処理 ---
         const handleFollow = async (target) => {
             if (!me) return alert("ログインが必要です");
             if (me === target) return alert("自分はフォローできません");
-
             const myFollowingRef = ref(db, `users/${me}/following/${target}`);
             const targetFollowersRef = ref(db, `users/${target}/followers/${me}`);
-            
             const snap = await get(myFollowingRef);
             if (snap.exists()) {
                 await Promise.all([remove(myFollowingRef), remove(targetFollowersRef)]);
@@ -221,7 +301,6 @@
             const blacklistedUsers = blackSnap.exists() ? Object.keys(blackSnap.val()) : [];
             const area = document.getElementById('rank-list-area');
             area.innerHTML = "";
-
             if(snap.exists()){
                 const users = Object.entries(snap.val()).filter(([name]) => !blacklistedUsers.includes(name));
                 const sorted = users.sort((a, b) => {
@@ -230,7 +309,6 @@
                     const bf = b[1].followers ? Object.keys(b[1].followers).length : 0;
                     return bf - af;
                 }).slice(0, 10);
-
                 sorted.forEach(([name, d], i) => {
                     const val = type === 'score' ? (d.score || 0) + " pt" : (d.followers ? Object.keys(d.followers).length : 0) + " followers";
                     area.innerHTML += `<div class="rank-item"><div class="rank-num">${i+1}</div><div class="user-icon" style="width:45px;height:45px;margin:0;">${d.icon ? `<img src="${d.icon}">` : '👤'}</div><div class="rank-info"><b>${name}</b><br><small>${val}</small></div></div>`;
@@ -258,26 +336,19 @@
                     btn.style.display = 'block';
                     btn.onclick = () => handleAdmin(hash);
                 }
-                
-                // フォローボタン制御
                 const followBtn = document.getElementById('btn-follow');
                 if (me && me !== hash) {
                     followBtn.style.display = 'inline-block';
                     const fSnap = await get(ref(db, `users/${me}/following/${hash}`));
                     if (fSnap.exists()) {
                         followBtn.innerText = "フォロー解除";
-                        followBtn.style.background = "#eee";
-                        followBtn.style.color = "#333";
-                        followBtn.style.border = "1px solid #ccc";
+                        followBtn.style.background = "#eee"; followBtn.style.color = "#333"; followBtn.style.border = "1px solid #ccc";
                     } else {
                         followBtn.innerText = "フォローする";
-                        followBtn.style.background = "#1DA1F2";
-                        followBtn.style.color = "white";
-                        followBtn.style.border = "none";
+                        followBtn.style.background = "#1DA1F2"; followBtn.style.color = "white"; followBtn.style.border = "none";
                     }
                     followBtn.onclick = () => handleFollow(hash);
                 }
-
                 const banned = await isBlacklisted(hash);
                 if (banned) {
                     document.getElementById('view-normal-content').style.display = 'none';
