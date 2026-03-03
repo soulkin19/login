@@ -3,45 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Portal v16.0</title>
+    <title>Simple X Portal v17.0</title>
     <style>
         body { font-family: sans-serif; margin: 0; background: #f0f2f5; color: #333; }
         .container { max-width: 500px; margin: 0 auto; background: #fff; min-height: 100vh; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         header { background: #1877f2; color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         .hidden { display: none !important; }
         
-        /* 投稿エリア */
         .post-box { padding: 15px; border-bottom: 8px solid #f0f2f5; }
         textarea { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box; resize: none; font-size: 16px; }
         .btn { background: #1877f2; color: #fff; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
 
-        /* タイムライン */
         .tweet { display: flex; padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; }
         .icon { width: 50px; height: 50px; border-radius: 50%; background: #eee; margin-right: 10px; flex-shrink: 0; overflow: hidden; object-fit: cover; }
         .tweet-content { flex: 1; }
         .tweet-name { font-weight: bold; font-size: 14px; }
+        .repost-label { font-size: 12px; color: #00ba7c; margin-bottom: 4px; font-weight: bold; }
         .tweet-text { font-size: 15px; margin-top: 5px; word-break: break-all; }
         .tweet-text a { color: #1877f2; text-decoration: none; }
-        .actions { margin-top: 10px; color: #65676b; font-size: 13px; display: flex; gap: 15px; }
+        .actions { margin-top: 10px; color: #65676b; font-size: 13px; display: flex; gap: 20px; }
+        .act-btn:hover { color: #1877f2; }
+        .active-repost { color: #00ba7c !important; }
 
-        /* プロフィール画面 */
         #profile-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 200; overflow-y: auto; }
         .p-header { padding: 20px; text-align: center; border-bottom: 1px solid #eee; }
         .p-icon-large { width: 100px; height: 100px; border-radius: 50%; margin: 0 auto 10px; display: block; object-fit: cover; border: 2px solid #1877f2; }
-        
-        /* 設定画面 */
         .settings-box { padding: 20px; }
-        .file-input { margin: 10px 0; }
     </style>
 </head>
 <body>
 
 <div id="auth-page" class="container">
     <div style="padding: 50px 20px; text-align: center;">
-        <h2>Portal Login</h2>
+        <h2>Simple Portal</h2>
         <input type="text" id="auth-u" placeholder="ユーザー名" style="width:100%; padding:10px; margin-bottom:10px;"><br>
         <input type="password" id="auth-p" placeholder="パスワード" style="width:100%; padding:10px; margin-bottom:10px;"><br>
-        <button class="btn" id="login-btn" style="width:100%;">ログイン / 新規登録</button>
+        <button class="btn" id="login-btn" style="width:100%;">ログイン / 登録</button>
     </div>
 </div>
 
@@ -51,11 +48,6 @@
         <div onclick="showSection('settings')" style="cursor:pointer;">設定⚙️</div>
     </header>
 
-    <nav style="display: flex; background: #fff; border-bottom: 1px solid #eee;">
-        <div style="flex:1; text-align:center; padding:10px; cursor:pointer; border-bottom:2px solid #1877f2;" onclick="showSection('tl')">🏠</div>
-        <div style="flex:1; text-align:center; padding:10px; cursor:pointer;" onclick="showSection('ranking')">🏆</div>
-    </nav>
-
     <main id="sec-tl">
         <div class="post-box">
             <textarea id="post-input" placeholder="いまどうしてる？" rows="3"></textarea>
@@ -64,35 +56,30 @@
         <div id="tl-area"></div>
     </main>
 
-    <main id="sec-ranking" class="hidden" style="padding:20px;"></main>
-
     <main id="sec-settings" class="hidden">
         <div class="settings-box">
             <h3>プロフィール設定</h3>
-            <p>アイコン変更 (画像を選択):</p>
-            <input type="file" id="icon-file" class="file-input" accept="image/*">
+            <p>アイコン変更:</p>
+            <input type="file" id="icon-file" accept="image/*">
             <p>自己紹介:</p>
             <textarea id="set-bio" placeholder="自己紹介を書いてください"></textarea>
             <button class="btn" onclick="saveSettings()" style="margin-top:10px; width:100%;">保存する</button>
-            <button onclick="logout()" style="margin-top:50px; width:100%; border:none; background:none; color:red;">ログアウト</button>
+            <button onclick="logout()" style="margin-top:50px; width:100%; border:none; background:none; color:red; cursor:pointer;">ログアウト</button>
         </div>
     </main>
 </div>
 
 <div id="profile-view" class="hidden">
     <div class="p-header">
-        <button onclick="closeProfile()" style="float:left; background:none; border:none; font-size:20px;">←</button>
+        <button onclick="closeProfile()" style="float:left; background:none; border:none; font-size:20px; cursor:pointer;">←</button>
         <img id="p-icon" class="p-icon-large" src="">
         <h2 id="p-name"></h2>
-        <p id="p-bio" style="color:#666;"></p>
+        <p id="p-bio"></p>
         <div style="display:flex; justify-content:center; gap:20px;">
             <span><b id="p-score">0</b> pt</span>
-            <span><b id="p-follows">0</b> フォロワー</span>
         </div>
         <div id="p-hype-zone" style="margin-top:15px; background:#f9f9f9; padding:10px; border-radius:10px;">
-            <p style="font-size:12px; margin:0 0 5px;">ハイプ(投げ銭)を送る</p>
-            <button onclick="sendTip(100)">🚀 100pt</button>
-            <button onclick="sendTip(500)">🚀 500pt</button>
+            <button onclick="sendTip(100)">🚀 100pt送る</button>
         </div>
     </div>
     <div id="p-posts"></div>
@@ -120,31 +107,35 @@
     const linkify = (t) => t.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
 
     window.showSection = (s) => {
-        ['tl', 'ranking', 'settings'].forEach(id => document.getElementById('sec-'+id).classList.toggle('hidden', id !== s));
+        ['tl', 'settings'].forEach(id => document.getElementById('sec-'+id).classList.toggle('hidden', id !== s));
         if(s === 'tl') refreshTL();
-        if(s === 'ranking') refreshRanking();
     };
 
     window.submitPost = async () => {
         const text = document.getElementById('post-input').value.trim();
         if(!text) return;
-        await push(ref(db, 'posts'), { user: me, text, time: serverTimestamp(), likes: {} });
+        await push(ref(db, 'posts'), { user: me, text, time: serverTimestamp(), likes: {}, reposts: {} });
         document.getElementById('post-input').value = "";
         update(ref(db, `users/${me}`), { score: increment(10) });
         refreshTL();
     };
 
-    const drawPost = (id, p) => {
+    const drawPost = (id, p, isRp = false, rpUser = "") => {
         const u = usersData[p.user] || {};
         const iconSrc = u.icon || "https://via.placeholder.com/50";
+        const hasLiked = p.likes && p.likes[me];
+        const hasRp = p.reposts && p.reposts[me];
+        
         return `
             <div class="tweet" onclick="openProfile('${p.user}')">
                 <img class="icon" src="${iconSrc}">
                 <div class="tweet-content">
+                    ${isRp ? `<div class="repost-label">🔁 ${rpUser} がリポスト</div>` : ''}
                     <div class="tweet-name">${p.user}</div>
                     <div class="tweet-text">${linkify(p.text)}</div>
                     <div class="actions">
-                        <span onclick="event.stopPropagation(); toggleLike('${id}')">❤️ ${p.likes ? Object.keys(p.likes).length : 0}</span>
+                        <span class="act-btn" onclick="event.stopPropagation(); toggleAction('${id}', 'likes')">${hasLiked ? '❤️' : '🖤'} ${p.likes ? Object.keys(p.likes).length : 0}</span>
+                        <span class="act-btn ${hasRp ? 'active-repost' : ''}" onclick="event.stopPropagation(); toggleAction('${id}', 'reposts')">🔁 ${p.reposts ? Object.keys(p.reposts).length : 0}</span>
                     </div>
                 </div>
             </div>`;
@@ -154,35 +145,34 @@
         const snap = await get(query(ref(db, 'posts'), limitToLast(50)));
         const area = document.getElementById('tl-area');
         area.innerHTML = "";
-        if(snap.exists()) Object.entries(snap.val()).reverse().forEach(([id, p]) => area.innerHTML += drawPost(id, p));
+        if(snap.exists()){
+            const data = snap.val();
+            Object.entries(data).reverse().forEach(([id, p]) => {
+                area.innerHTML += drawPost(id, p);
+            });
+        }
     };
 
-    window.toggleLike = async (id) => {
-        const lRef = ref(db, `posts/${id}/likes/${me}`);
-        const s = await get(lRef);
-        if(s.exists()) await remove(lRef); else await set(lRef, true);
+    window.toggleAction = async (id, type) => {
+        const aRef = ref(db, `posts/${id}/${type}/${me}`);
+        const s = await get(aRef);
+        if(s.exists()) await remove(aRef); else await set(aRef, true);
         refreshTL();
     };
 
-    // アイコンをBase64変換して保存
     window.saveSettings = async () => {
         const file = document.getElementById('icon-file').files[0];
         const bio = document.getElementById('set-bio').value;
-        let updateData = { bio };
-
         if (file) {
             const reader = new FileReader();
             reader.onloadend = async () => {
-                updateData.icon = reader.result; // Base64文字列
-                await update(ref(db, `users/${me}`), updateData);
-                alert("保存しました！");
-                location.reload();
+                await update(ref(db, `users/${me}`), { bio, icon: reader.result });
+                alert("保存完了"); location.reload();
             };
             reader.readAsDataURL(file);
         } else {
-            await update(ref(db, `users/${me}`), updateData);
-            alert("保存しました！");
-            location.reload();
+            await update(ref(db, `users/${me}`), { bio });
+            alert("保存完了"); location.reload();
         }
     };
 
@@ -201,7 +191,14 @@
             const pArea = document.getElementById('p-posts');
             const ps = await get(query(ref(db, 'posts'), limitToLast(100)));
             pArea.innerHTML = "";
-            if(ps.exists()) Object.entries(ps.val()).reverse().filter(([i,p])=>p.user===u).forEach(([i,p])=>pArea.innerHTML += drawPost(i,p));
+            if(ps.exists()){
+                const all = ps.val();
+                Object.entries(all).reverse().forEach(([id, p]) => {
+                    // 自分の投稿、または自分がリポストした投稿を表示
+                    if(p.user === u) pArea.innerHTML += drawPost(id, p);
+                    else if(p.reposts && p.reposts[u]) pArea.innerHTML += drawPost(id, p, true, u);
+                });
+            }
         }
     };
 
@@ -211,7 +208,6 @@
         if((myS.val()||0) < amt) return alert("pt不足");
         await update(ref(db, `users/${me}`), { score: increment(-amt) });
         await update(ref(db, `users/${target}`), { score: increment(amt * 0.9) });
-        alert("ハイプ完了");
         openProfile(target);
     };
 
@@ -237,7 +233,7 @@
         const s = await get(ref(db, `users/${u}`));
         if(s.exists() && s.val().password === p) { localStorage.setItem("loginnow", u); location.reload(); }
         else if(!s.exists()) { await set(ref(db, `users/${u}`), { password: p, score: 500 }); localStorage.setItem("loginnow", u); location.reload(); }
-        else alert("ログイン失敗");
+        else alert("エラー");
     };
 
     init();
